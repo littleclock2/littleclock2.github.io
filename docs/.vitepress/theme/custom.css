@@ -1204,9 +1204,8 @@ html:not(.dark) .ef-music-tooltip {
 html:not(.dark) .ef-music-tip-title { color: #333; }
 html:not(.dark) .ef-music-tip-time { color: rgba(160,140,0,0.6); }
 html:not(.dark) .ef-music-label { color: rgba(160,140,0,0.5); }
-html:not(.dark) .ef-music-progress-bg { background: rgba(160,140,0,0.12); }
-html:not(.dark) .ef-music-progress-fill { background: #bcb30a; }
-html:not(.dark) .ef-music-progress-handle { background: #bcb30a; }
+html:not(.dark) .ef-music-ring circle:first-child { stroke: rgba(160,140,0,0.1); }
+html:not(.dark) .ef-music-ring-progress { stroke: #bcb30a; }
 html:not(.dark) .ef-music-bar { background: #bcb30a; }
 html:not(.dark) .ef-music-volume {
   background: rgba(248,248,248,0.95);

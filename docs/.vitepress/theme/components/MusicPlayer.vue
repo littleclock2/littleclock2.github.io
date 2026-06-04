@@ -14,14 +14,18 @@ const showVolume = ref(false)
 const hasError = ref(false)
 const songName = ref('')
 const showTooltip = ref(false)
-const isDraggingProgress = ref(false)
 const isDraggingVolume = ref(false)
-const progressRef = ref(null)
 const volRef = ref(null)
+
+const CIRCUMFERENCE = 2 * Math.PI * 36
 
 const progressPercent = computed(() => {
   if (!duration.value) return 0
   return (progress.value / duration.value) * 100
+})
+
+const progressOffset = computed(() => {
+  return CIRCUMFERENCE - (CIRCUMFERENCE * progressPercent.value / 100)
 })
 
 function formatTime(sec) {
@@ -32,7 +36,6 @@ function formatTime(sec) {
 }
 
 async function detectMusic() {
-  // Try to fetch directory listing to find mp3 files
   try {
     const res = await fetch(MUSIC_DIR)
     const html = await res.text()
@@ -43,7 +46,6 @@ async function detectMusic() {
       return match[1]
     }
   } catch {}
-  // Fallback: try common names
   const candidates = ['bgm.mp3', 'music.mp3', 'song.mp3']
   for (const name of candidates) {
     try {
@@ -71,9 +73,7 @@ async function initAudio() {
   })
 
   audio.value.addEventListener('timeupdate', () => {
-    if (!isDraggingProgress.value) {
-      progress.value = audio.value.currentTime
-    }
+    progress.value = audio.value.currentTime
   })
 
   audio.value.addEventListener('error', () => {
@@ -96,31 +96,6 @@ function togglePlay() {
     })
   }
   localStorage.setItem(STORAGE_KEY, isPlaying.value ? '1' : '0')
-}
-
-function startProgressDrag(e) {
-  isDraggingProgress.value = true
-  updateProgress(e)
-  document.addEventListener('mousemove', onProgressDrag)
-  document.addEventListener('mouseup', stopProgressDrag)
-}
-
-function onProgressDrag(e) {
-  if (isDraggingProgress.value) updateProgress(e)
-}
-
-function stopProgressDrag() {
-  isDraggingProgress.value = false
-  document.removeEventListener('mousemove', onProgressDrag)
-  document.removeEventListener('mouseup', stopProgressDrag)
-}
-
-function updateProgress(e) {
-  if (!audio.value || !duration.value || !progressRef.value) return
-  const rect = progressRef.value.getBoundingClientRect()
-  const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
-  audio.value.currentTime = x * duration.value
-  progress.value = audio.value.currentTime
 }
 
 function startVolDrag(e) {
@@ -151,13 +126,11 @@ function updateVolume(e) {
 }
 
 onMounted(async () => {
-  // Restore saved volume
   const savedVol = localStorage.getItem(VOL_KEY)
   if (savedVol !== null) volume.value = parseFloat(savedVol)
 
   await initAudio()
 
-  // Auto-play if previously playing
   if (localStorage.getItem(STORAGE_KEY) === '1') {
     setTimeout(() => {
       audio.value?.play().then(() => {
@@ -168,8 +141,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', onProgressDrag)
-  document.removeEventListener('mouseup', stopProgressDrag)
   document.removeEventListener('mousemove', onVolDrag)
   document.removeEventListener('mouseup', stopVolDrag)
   if (audio.value) {
@@ -185,7 +156,7 @@ onUnmounted(() => {
     @mouseenter="showVolume = true; showTooltip = true"
     @mouseleave="showVolume = false; showTooltip = false"
   >
-    <!-- Song name tooltip (above button) -->
+    <!-- Song name tooltip -->
     <Transition name="ef-music-tip">
       <div v-if="showTooltip && songName && !hasError" class="ef-music-tooltip">
         <span class="ef-music-tip-title">{{ songName }}</span>
@@ -193,17 +164,8 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <!-- Progress bar -->
-    <div v-if="songName && !hasError" class="ef-music-progress-wrap">
-      <div ref="progressRef" class="ef-music-progress" @mousedown.prevent="startProgressDrag">
-        <div class="ef-music-progress-fill" :style="{ width: progressPercent + '%' }"></div>
-        <div class="ef-music-progress-handle" :style="{ left: progressPercent + '%' }"></div>
-      </div>
-    </div>
-
-    <!-- Main row: volume + button + label -->
     <div class="ef-music-row">
-      <!-- Volume slider (left side) -->
+      <!-- Volume slider -->
       <Transition name="ef-music-vol">
         <div v-if="showVolume" class="ef-music-volume">
           <div ref="volRef" class="ef-music-vol-track" @mousedown.prevent="startVolDrag">
@@ -213,23 +175,42 @@ onUnmounted(() => {
         </div>
       </Transition>
 
-      <!-- Main toggle button -->
-      <button
-        class="ef-music-btn"
-        :class="{ 'ef-music-btn--active': isPlaying, 'ef-music-btn--error': hasError }"
-        @click="togglePlay"
-      >
-        <div class="ef-music-bars" v-if="isPlaying">
-          <span class="ef-music-bar"></span>
-          <span class="ef-music-bar"></span>
-          <span class="ef-music-bar"></span>
-          <span class="ef-music-bar"></span>
-          <span class="ef-music-bar"></span>
-        </div>
-        <svg v-else class="ef-music-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <path d="M5 3v12l10-6L5 3z" fill="currentColor"/>
+      <!-- Progress ring + button -->
+      <div class="ef-music-ring-wrap">
+        <!-- SVG progress ring -->
+        <svg class="ef-music-ring" width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="28" fill="none" stroke="rgba(255,241,0,0.06)" stroke-width="2"/>
+          <circle
+            v-if="!hasError"
+            cx="30" cy="30" r="28"
+            fill="none"
+            class="ef-music-ring-progress"
+            stroke-width="2.5"
+            :stroke-dasharray="CIRCUMFERENCE"
+            :stroke-dashoffset="progressOffset"
+            transform="rotate(-90 30 30)"
+            stroke-linecap="round"
+          />
         </svg>
-      </button>
+
+        <!-- Play button -->
+        <button
+          class="ef-music-btn"
+          :class="{ 'ef-music-btn--active': isPlaying, 'ef-music-btn--error': hasError }"
+          @click="togglePlay"
+        >
+          <div class="ef-music-bars" v-if="isPlaying">
+            <span class="ef-music-bar"></span>
+            <span class="ef-music-bar"></span>
+            <span class="ef-music-bar"></span>
+            <span class="ef-music-bar"></span>
+            <span class="ef-music-bar"></span>
+          </div>
+          <svg v-else class="ef-music-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M5 3v12l10-6L5 3z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
 
       <span class="ef-music-label" v-if="!hasError">BGM</span>
     </div>
@@ -292,54 +273,34 @@ onUnmounted(() => {
   color: rgba(255,241,0,0.5);
 }
 
-/* Progress bar */
-.ef-music-progress-wrap {
-  width: 140px;
-  padding: 8px 0;
+/* Ring + Button */
+.ef-music-ring-wrap {
+  position: relative;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
-.ef-music-progress {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background: rgba(255,241,0,0.1);
-  cursor: pointer;
-}
-
-.ef-music-progress-fill {
+.ef-music-ring {
   position: absolute;
   top: 0;
   left: 0;
-  height: 100%;
-  background: var(--ef-yellow);
   pointer-events: none;
 }
 
-.ef-music-progress-handle {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  background: var(--ef-yellow);
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
-.ef-music-progress:hover .ef-music-progress-handle {
-  opacity: 1;
+.ef-music-ring-progress {
+  stroke: var(--ef-yellow);
+  transition: stroke-dashoffset 0.3s linear;
 }
 
 /* Button */
 .ef-music-btn {
   position: relative;
   z-index: 2;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2px solid rgba(255,241,0,0.35);
   background: rgba(10,10,10,0.92);
@@ -350,20 +311,20 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 0 24px rgba(0,0,0,0.5), inset 0 0 12px rgba(255,241,0,0.03);
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
 }
 
 .ef-music-btn:hover {
   border-color: rgba(255,241,0,0.6);
   color: var(--ef-yellow);
-  box-shadow: 0 0 32px rgba(255,241,0,0.15), inset 0 0 16px rgba(255,241,0,0.06);
+  box-shadow: 0 0 28px rgba(255,241,0,0.15);
   transform: scale(1.05);
 }
 
 .ef-music-btn--active {
   border-color: rgba(255,241,0,0.5);
   color: var(--ef-yellow);
-  box-shadow: 0 0 28px rgba(255,241,0,0.12), inset 0 0 14px rgba(255,241,0,0.05);
+  box-shadow: 0 0 24px rgba(255,241,0,0.12);
 }
 
 .ef-music-btn--error {
@@ -388,7 +349,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 2.5px;
-  height: 20px;
+  height: 18px;
 }
 
 .ef-music-bar {
@@ -468,9 +429,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .ef-music { bottom: 16px; right: 16px; }
-  .ef-music-btn { width: 44px; height: 44px; }
+  .ef-music { bottom: 80px; right: 16px; }
   .ef-music-label { font-size: 9px; }
-  .ef-music-progress { width: 100px; }
 }
 </style>
