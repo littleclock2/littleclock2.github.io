@@ -71,7 +71,7 @@ async function initAudio() {
   })
 
   audio.value.addEventListener('timeupdate', () => {
-    if (!isDragging.value) {
+    if (!isDraggingProgress.value) {
       progress.value = audio.value.currentTime
     }
   })
@@ -288,8 +288,8 @@ onUnmounted(() => {
 
 /* Progress bar */
 .ef-music-progress-wrap {
-  width: 120px;
-  padding: 6px 0;
+  width: 140px;
+  padding: 8px 0;
   display: flex;
   align-items: center;
 }
@@ -297,7 +297,7 @@ onUnmounted(() => {
 .ef-music-progress {
   position: relative;
   width: 100%;
-  height: 3px;
+  height: 4px;
   background: rgba(255,241,0,0.1);
   cursor: pointer;
 }
@@ -315,8 +315,8 @@ onUnmounted(() => {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   background: var(--ef-yellow);
   border-radius: 50%;
   opacity: 0;
