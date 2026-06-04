@@ -35,9 +35,9 @@
   --ef-dark: #1a1a1a;
 }
 
-html { color-scheme: dark; scroll-behavior: smooth; cursor: url('/theme/pointer.png') 12 12, auto; font-size: 17px; }
-body { cursor: url('/theme/pointer.png') 12 12, auto; }
-a, button, [role="button"], input, select, textarea { cursor: url('/theme/pointer.png') 12 12, pointer; }
+html { color-scheme: dark; scroll-behavior: smooth; cursor: url('/theme/pointer.png') 0 0, auto; font-size: 17px; }
+body { cursor: url('/theme/pointer.png') 0 0, auto; }
+a, button, [role="button"], input, select, textarea { cursor: url('/theme/pointer.png') 0 0, pointer; }
 body {
   font-family: 'Source Sans 3', 'Noto Sans SC', sans-serif;
   background: #0a0a0a;
