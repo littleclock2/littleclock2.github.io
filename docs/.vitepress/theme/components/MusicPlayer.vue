@@ -212,7 +212,7 @@ onUnmounted(() => {
         </button>
       </div>
 
-      <span class="ef-music-label" v-if="!hasError">BGM</span>
+      <span class="ef-music-label" v-if="!hasError"></span>
     </div>
   </div>
 </template>

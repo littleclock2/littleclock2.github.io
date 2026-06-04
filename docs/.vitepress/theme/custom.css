@@ -280,7 +280,7 @@ body {
   position: relative;
   overflow: hidden;
   margin: 0 !important;
-  padding: 28px 28px 28px 32px !important;
+  padding: 32px !important;
   text-align: left !important;
   transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   display: block !important;
@@ -333,13 +333,13 @@ body {
   border: 1px solid rgba(255,241,0,0.12) !important;
   border-radius: 0 !important;
   color: var(--ef-yellow) !important;
-  font-size: 18px !important;
-  width: 40px !important;
-  height: 40px !important;
+  font-size: 22px !important;
+  width: 48px !important;
+  height: 48px !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px !important;
+  margin-bottom: 18px !important;
   transition: all 0.3s ease;
 }
 .VPFeature:hover .icon {
@@ -354,9 +354,9 @@ body {
   font-weight: 800;
   letter-spacing: 2px;
   text-transform: uppercase;
-  font-size: 14px !important;
+  font-size: 16px !important;
   color: #e0e0e0 !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 12px !important;
   text-align: left;
   transition: color 0.3s ease;
 }
@@ -368,7 +368,7 @@ body {
 .VPFeature .details,
 .VPFeature .details {
   color: #888 !important;
-  font-size: 14px !important;
+  font-size: 15px !important;
   line-height: 1.7 !important;
   text-align: left;
 }
@@ -627,21 +627,36 @@ html:not(.dark) .VPNavBarMenuLink.active {
 
 /* 亮色Hero */
 html:not(.dark) .VPHero .name {
-  color: #7a7500 !important;
-  text-shadow: none;
+  color: #665c00 !important;
+  text-shadow: 0 2px 20px rgba(180,170,0,0.15);
+  animation: t-name-glow-light 4s ease-in-out infinite alternate;
+}
+@keyframes t-name-glow-light {
+  from { text-shadow: 0 2px 20px rgba(180,170,0,0.12), 0 0 60px rgba(180,170,0,0.04); }
+  to   { text-shadow: 0 2px 30px rgba(180,170,0,0.2), 0 0 80px rgba(180,170,0,0.06); }
 }
 
-html:not(.dark) .VPHero .text { color: #777 !important; }
-html:not(.dark) .VPHero .tagline { color: #999 !important; }
+html:not(.dark) .VPHero .text { color: #888 !important; letter-spacing: 10px; }
+html:not(.dark) .VPHero .tagline {
+  color: #665c00 !important;
+  letter-spacing: 6px;
+  text-shadow: 0 0 30px rgba(180,170,0,0.1);
+  animation: t-tagline-glow-light 5s ease-in-out infinite alternate;
+}
+@keyframes t-tagline-glow-light {
+  from { text-shadow: 0 0 20px rgba(180,170,0,0.06); }
+  to   { text-shadow: 0 0 40px rgba(180,170,0,0.15); }
+}
 
 html:not(.dark) .VPButton.brand {
-  background: #bcb30a !important;
+  background: #665c00 !important;
   color: #fff !important;
-  border-color: #bcb30a !important;
+  border-color: #665c00 !important;
 }
 html:not(.dark) .VPButton.brand:hover {
-  background: #8a8500 !important;
-  border-color: #8a8500 !important;
+  background: #504800 !important;
+  border-color: #504800 !important;
+  box-shadow: 0 4px 24px rgba(102,92,0,0.25) !important;
 }
 
 html:not(.dark) .VPButton.alt {
@@ -650,9 +665,9 @@ html:not(.dark) .VPButton.alt {
   background: transparent !important;
 }
 html:not(.dark) .VPButton.alt:hover {
-  border-color: #8a8500 !important;
-  color: #8a8500 !important;
-  background: rgba(255,241,0,0.06) !important;
+  border-color: #665c00 !important;
+  color: #665c00 !important;
+  background: rgba(102,92,0,0.06) !important;
 }
 
 /* 亮色Hero按钮 — 提升特异性覆盖dark模式 */
@@ -662,9 +677,9 @@ html:not(.dark) .VPHero .actions .action .VPButton.alt {
   background: transparent !important;
 }
 html:not(.dark) .VPHero .actions .action .VPButton.alt:hover {
-  border-color: #8a8500 !important;
-  color: #8a8500 !important;
-  background: rgba(255,241,0,0.06) !important;
+  border-color: #665c00 !important;
+  color: #665c00 !important;
+  background: rgba(102,92,0,0.06) !important;
 }
 
 /* 亮色Feature卡片 */
@@ -982,90 +997,105 @@ html:not(.dark) .ef-project-link { color: #888; }
 html:not(.dark) .ef-project-link:hover { color: #7a7500; }
 
 /* ═══════════════════════════════════════════════════════════
-   亮色模式 — HeroSection (t-hero)
+   亮色模式 — Hero 全面重设计
    ═══════════════════════════════════════════════════════════ */
 
-html:not(.dark) .t-hero-grid {
-  background-image:
-    linear-gradient(rgba(180,170,0,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(180,170,0,0.04) 1px, transparent 1px);
+/* Hero 背景：暖色纸张质感 */
+html:not(.dark) .VPHero {
+  background: #faf9f5 !important;
 }
 
+/* 右侧黄色装饰块：从隐形变为可见的设计元素 */
+html:not(.dark) .t-hero-yellow-block {
+  background: linear-gradient(135deg, #e8dfb0 0%, #d4c98a 100%) !important;
+  opacity: 0.18 !important;
+}
+
+/* 网格线：从2%提升到可见 */
+html:not(.dark) .t-hero-grid {
+  background-image:
+    linear-gradient(rgba(160,140,0,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160,140,0,0.1) 1px, transparent 1px) !important;
+}
+
+/* 扫描线：可见的纹理 */
 html:not(.dark) .t-hero-scanlines {
   background: repeating-linear-gradient(
     0deg,
     transparent,
     transparent 2px,
-    rgba(180,170,0,0.01) 2px,
-    rgba(180,170,0,0.01) 4px
-  );
+    rgba(160,140,0,0.015) 2px,
+    rgba(160,140,0,0.015) 4px
+  ) !important;
 }
 
+/* 底部雾化 */
 html:not(.dark) .t-hero-fog {
-  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(248,248,248,0) 0%, #f8f8f8 100%);
+  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(250,249,245,0) 0%, #faf9f5 100%) !important;
 }
 
-html:not(.dark) .t-hero-yellow-block {
-  background: #bcb30a;
-  opacity: 0.03 !important;
-}
+/* 斜线装饰 */
+html:not(.dark) .t-hero-diag { background: rgba(160,140,0,0.1) !important; }
+html:not(.dark) .t-hero-diag--3 { background: rgba(160,140,0,0.06) !important; }
 
-html:not(.dark) .t-hero-diag { background: rgba(180,170,0,0.05); }
-html:not(.dark) .t-hero-diag--3 { background: rgba(180,170,0,0.03); }
-
+/* 竖线 + 横线 */
 html:not(.dark) .t-hero-vbar {
-  background: linear-gradient(180deg, transparent, #bcb30a 25%, #bcb30a 75%, transparent);
+  background: linear-gradient(180deg, transparent, #9a8e00 25%, #9a8e00 75%, transparent) !important;
+  opacity: 0.35 !important;
 }
-
 html:not(.dark) .t-hero-hline {
-  background: linear-gradient(90deg, #bcb30a, rgba(188,179,10,0.2) 50%, transparent);
+  background: linear-gradient(90deg, #9a8e00, rgba(154,142,0,0.3) 50%, transparent) !important;
+  opacity: 0.35 !important;
 }
 
-html:not(.dark) .t-particle { background: #bcb30a; }
+/* 粒子 */
+html:not(.dark) .t-particle { background: #9a8e00 !important; }
 
+/* 鼠标光晕 */
 html:not(.dark) .t-hero-glow {
-  background: radial-gradient(circle, rgba(180,170,0,0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(180,170,0,0.06) 0%, transparent 70%) !important;
 }
 
+/* 水印文字 */
 html:not(.dark) .t-hero-watermark {
-  color: rgba(0,0,0,0.025);
+  color: rgba(100,90,0,0.04) !important;
 }
+html:not(.dark) .t-hero-watermark--sub { color: rgba(100,90,0,0.03) !important; }
 
+/* 坐标标签 */
 html:not(.dark) .t-hero-coord {
-  color: rgba(140,130,0,0.3);
+  color: rgba(120,110,0,0.4) !important;
 }
-html:not(.dark) .t-coord-label { color: #8a8500; }
-html:not(.dark) .t-coord-sep { color: rgba(140,130,0,0.15); }
+html:not(.dark) .t-coord-label { color: #7a7000 !important; }
+html:not(.dark) .t-coord-sep { color: rgba(120,110,0,0.2) !important; }
 
+/* 角落装饰 */
 html:not(.dark) .t-corner::before,
-html:not(.dark) .t-corner::after { background: #bcb30a; }
+html:not(.dark) .t-corner::after { background: #9a8e00 !important; }
 
+/* 底部状态栏 */
 html:not(.dark) .t-hero-statusbar {
-  color: rgba(140,130,0,0.4);
+  color: rgba(120,110,0,0.5) !important;
 }
 html:not(.dark) .t-status-dot {
-  background: #00aa6a;
-  box-shadow: 0 0 8px rgba(0,170,106,0.4);
+  background: #009966 !important;
+  box-shadow: 0 0 8px rgba(0,153,102,0.4) !important;
 }
-html:not(.dark) .t-status-sep { color: rgba(140,130,0,0.15); }
+html:not(.dark) .t-status-sep { color: rgba(120,110,0,0.2) !important; }
 
-/* 亮色 Hero 文字 */
-html:not(.dark) .VPHero .name {
-  text-shadow: none;
-  animation: none;
-}
-html:not(.dark) .VPHero .text {
-  color: rgba(0,0,0,0.35) !important;
-}
-html:not(.dark) .VPHero .tagline {
-  color: rgba(0,0,0,0.45) !important;
-  letter-spacing: 6px;
-  text-shadow: 0 0 30px rgba(200,160,0,0.1);
-  animation: t-tagline-glow-light 5s ease-in-out infinite alternate;
-}
-@keyframes t-tagline-glow-light {
-  from { text-shadow: 0 0 20px rgba(200,160,0,0.06); }
-  to   { text-shadow: 0 0 40px rgba(200,160,0,0.15); }
+/* 六边形 */
+html:not(.dark) .t-hex { border-color: rgba(160,140,0,0.15) !important; }
+
+/* 电路线 */
+html:not(.dark) .t-circuit path { stroke: rgba(160,140,0,0.1) !important; }
+html:not(.dark) .t-circuit circle { fill: rgba(160,140,0,0.18) !important; }
+
+/* 渐变网格背景 */
+html:not(.dark) .t-hero-mesh {
+  background:
+    radial-gradient(ellipse 50% 40% at 20% 50%, rgba(180,170,0,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 50% at 80% 30%, rgba(180,170,0,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 30% at 50% 80%, rgba(180,170,0,0.03) 0%, transparent 50%) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1157,20 +1187,6 @@ html:not(.dark) .t-divider-line {
   background: linear-gradient(90deg, transparent, rgba(180,170,0,0.12) 50%, transparent);
 }
 html:not(.dark) .t-divider-dot { background: #bcb30a; }
-
-html:not(.dark) .t-hex { border-color: rgba(180,170,0,0.08); }
-
-html:not(.dark) .t-circuit path { stroke: rgba(180,170,0,0.06); }
-html:not(.dark) .t-circuit circle { fill: rgba(180,170,0,0.1); }
-
-html:not(.dark) .t-hero-watermark--sub { color: rgba(0,0,0,0.02); }
-
-html:not(.dark) .t-hero-mesh {
-  background:
-    radial-gradient(ellipse 50% 40% at 20% 50%, rgba(180,170,0,0.03) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 50% at 80% 30%, rgba(180,170,0,0.02) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 30% at 50% 80%, rgba(180,170,0,0.015) 0%, transparent 50%);
-}
 
 html:not(.dark) .t-tx-num { color: rgba(140,130,0,0.12); }
 

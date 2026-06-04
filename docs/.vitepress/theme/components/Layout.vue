@@ -262,7 +262,7 @@ watch(() => route.path, patchAll)
 
 .t-stat-label {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 3px;
   color: rgba(255,241,0,0.4);
 }
@@ -309,7 +309,7 @@ watch(() => route.path, patchAll)
 .t-section-label {
   font-family: 'Inter', sans-serif;
   font-weight: 800;
-  font-size: 12px;
+  font-size: 13px;
   letter-spacing: 4px;
   color: rgba(255,255,255,0.5);
   text-transform: uppercase;
@@ -326,14 +326,14 @@ watch(() => route.path, patchAll)
 .t-transmission-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .t-transmission {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
+  gap: 16px;
+  padding: 20px 24px;
   background: rgba(14,14,14,0.6);
   border: 1px solid rgba(255,241,0,0.04);
   text-decoration: none;
@@ -349,9 +349,9 @@ watch(() => route.path, patchAll)
 .t-tx-num {
   font-family: 'Inter', sans-serif;
   font-weight: 900;
-  font-size: 20px;
+  font-size: 24px;
   color: rgba(255,241,0,0.1);
-  min-width: 30px;
+  min-width: 36px;
 }
 
 .t-tx-status {
@@ -364,15 +364,15 @@ watch(() => route.path, patchAll)
 
 .t-tx-id {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 2px;
   color: rgba(255,241,0,0.4);
-  min-width: 50px;
+  min-width: 56px;
 }
 
 .t-tx-title {
   font-family: 'Source Sans 3', 'Noto Sans SC', sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #ccc;
   flex: 1;
@@ -382,24 +382,24 @@ watch(() => route.path, patchAll)
 
 .t-tx-date {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px;
+  font-size: 11px;
   color: #555;
   letter-spacing: 1px;
 }
 
 .t-tx-tag {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 2px;
   color: var(--ef-yellow);
   border: 1px solid rgba(255,241,0,0.15);
-  padding: 2px 8px;
+  padding: 3px 10px;
   background: rgba(255,241,0,0.04);
 }
 
 .t-tx-arrow {
   color: #333;
-  font-size: 14px;
+  font-size: 16px;
   transition: all 0.3s ease;
 }
 .t-transmission:hover .t-tx-arrow {
@@ -411,7 +411,7 @@ watch(() => route.path, patchAll)
 .t-mission-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
+  gap: 4px;
 }
 
 .t-mission {
@@ -439,13 +439,13 @@ watch(() => route.path, patchAll)
 }
 .t-mission:hover .t-mission-top { opacity: 1; }
 
-.t-mission-body { padding: 20px; }
+.t-mission-body { padding: 24px; }
 
 .t-mission-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .t-mission-led {
@@ -461,28 +461,28 @@ watch(() => route.path, patchAll)
 .t-mission-name {
   font-family: 'Inter', sans-serif;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 15px;
   letter-spacing: 1px;
   color: #ddd;
   text-transform: uppercase;
 }
 
 .t-mission-desc {
-  font-size: 12px;
+  font-size: 14px;
   color: #777;
-  line-height: 1.6;
-  margin: 0 0 12px;
+  line-height: 1.7;
+  margin: 0 0 14px;
 }
 
-.t-mission-tags { display: flex; gap: 6px; }
+.t-mission-tags { display: flex; gap: 8px; }
 
 .t-mtag {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 1.5px;
   color: rgba(255,241,0,0.6);
   border: 1px solid rgba(255,241,0,0.1);
-  padding: 2px 8px;
+  padding: 3px 10px;
 }
 
 /* ═══ Section Link ═══════════════════════════════════════ */
@@ -490,9 +490,9 @@ watch(() => route.path, patchAll)
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 24px;
+  margin-top: 28px;
   font-family: 'Source Sans 3', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 3px;
   color: #555;
@@ -512,7 +512,7 @@ watch(() => route.path, patchAll)
   .t-home-sections { padding: 40px 6% 80px; }
   .t-stats-grid { grid-template-columns: repeat(2, 1fr); }
   .t-mission-grid { grid-template-columns: 1fr; }
-  .t-transmission { flex-wrap: wrap; gap: 8px; }
+  .t-transmission { flex-wrap: wrap; gap: 10px; padding: 16px 18px; }
   .t-tx-date { display: none; }
   .t-tx-num { display: none; }
 }
