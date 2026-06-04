@@ -14,7 +14,8 @@ const showVolume = ref(false)
 const hasError = ref(false)
 const songName = ref('')
 const showTooltip = ref(false)
-const isDragging = ref(false)
+const isDraggingProgress = ref(false)
+const isDraggingVolume = ref(false)
 const progressRef = ref(null)
 const volRef = ref(null)
 
@@ -97,21 +98,21 @@ function togglePlay() {
   localStorage.setItem(STORAGE_KEY, isPlaying.value ? '1' : '0')
 }
 
-function startDrag(e) {
-  isDragging.value = true
+function startProgressDrag(e) {
+  isDraggingProgress.value = true
   updateProgress(e)
-  document.addEventListener('mousemove', onDrag)
-  document.addEventListener('mouseup', stopDrag)
+  document.addEventListener('mousemove', onProgressDrag)
+  document.addEventListener('mouseup', stopProgressDrag)
 }
 
-function onDrag(e) {
-  if (isDragging.value) updateProgress(e)
+function onProgressDrag(e) {
+  if (isDraggingProgress.value) updateProgress(e)
 }
 
-function stopDrag() {
-  isDragging.value = false
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', stopDrag)
+function stopProgressDrag() {
+  isDraggingProgress.value = false
+  document.removeEventListener('mousemove', onProgressDrag)
+  document.removeEventListener('mouseup', stopProgressDrag)
 }
 
 function updateProgress(e) {
@@ -122,7 +123,24 @@ function updateProgress(e) {
   progress.value = audio.value.currentTime
 }
 
-function setVolume(e) {
+function startVolDrag(e) {
+  isDraggingVolume.value = true
+  updateVolume(e)
+  document.addEventListener('mousemove', onVolDrag)
+  document.addEventListener('mouseup', stopVolDrag)
+}
+
+function onVolDrag(e) {
+  if (isDraggingVolume.value) updateVolume(e)
+}
+
+function stopVolDrag() {
+  isDraggingVolume.value = false
+  document.removeEventListener('mousemove', onVolDrag)
+  document.removeEventListener('mouseup', stopVolDrag)
+}
+
+function updateVolume(e) {
   if (!volRef.value) return
   const rect = volRef.value.getBoundingClientRect()
   const y = e.clientY - rect.top
@@ -150,8 +168,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', onDrag)
-  document.removeEventListener('mouseup', stopDrag)
+  document.removeEventListener('mousemove', onProgressDrag)
+  document.removeEventListener('mouseup', stopProgressDrag)
+  document.removeEventListener('mousemove', onVolDrag)
+  document.removeEventListener('mouseup', stopVolDrag)
   if (audio.value) {
     audio.value.pause()
     audio.value.src = ''
@@ -173,9 +193,9 @@ onUnmounted(() => {
       </div>
     </Transition>
 
-    <!-- Progress bar (below tooltip, above button) -->
-    <div v-if="songName && !hasError" ref="progressRef" class="ef-music-progress" @mousedown="startDrag">
-      <div class="ef-music-progress-bg">
+    <!-- Progress bar -->
+    <div v-if="songName && !hasError" class="ef-music-progress-wrap">
+      <div ref="progressRef" class="ef-music-progress" @mousedown.prevent="startProgressDrag">
         <div class="ef-music-progress-fill" :style="{ width: progressPercent + '%' }"></div>
         <div class="ef-music-progress-handle" :style="{ left: progressPercent + '%' }"></div>
       </div>
@@ -186,7 +206,7 @@ onUnmounted(() => {
       <!-- Volume slider (left side) -->
       <Transition name="ef-music-vol">
         <div v-if="showVolume" class="ef-music-volume">
-          <div ref="volRef" class="ef-music-vol-track" @click="setVolume">
+          <div ref="volRef" class="ef-music-vol-track" @mousedown.prevent="startVolDrag">
             <div class="ef-music-vol-fill" :style="{ height: (volume * 100) + '%' }"></div>
           </div>
           <span class="ef-music-vol-label">{{ Math.round(volume * 100) }}</span>
@@ -267,17 +287,19 @@ onUnmounted(() => {
 }
 
 /* Progress bar */
-.ef-music-progress {
+.ef-music-progress-wrap {
   width: 120px;
-  cursor: pointer;
-  padding: 4px 0;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
 }
 
-.ef-music-progress-bg {
+.ef-music-progress {
   position: relative;
   width: 100%;
   height: 3px;
   background: rgba(255,241,0,0.1);
+  cursor: pointer;
 }
 
 .ef-music-progress-fill {
@@ -286,19 +308,20 @@ onUnmounted(() => {
   left: 0;
   height: 100%;
   background: var(--ef-yellow);
-  transition: width 0.1s linear;
+  pointer-events: none;
 }
 
 .ef-music-progress-handle {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: var(--ef-yellow);
   border-radius: 50%;
   opacity: 0;
   transition: opacity 0.2s ease;
+  pointer-events: none;
 }
 
 .ef-music-progress:hover .ef-music-progress-handle {
