@@ -35,7 +35,9 @@
   --ef-dark: #1a1a1a;
 }
 
-html { color-scheme: dark; scroll-behavior: smooth; }
+html { color-scheme: dark; scroll-behavior: smooth; cursor: url('/theme/pointer.png') 12 12, auto; }
+body { cursor: url('/theme/pointer.png') 12 12, auto; }
+a, button, [role="button"], input, select, textarea { cursor: url('/theme/pointer.png') 12 12, pointer; }
 body {
   font-family: 'Source Sans 3', 'Noto Sans SC', sans-serif;
   background: #0a0a0a;
@@ -64,6 +66,22 @@ body {
   text-transform: uppercase;
   color: #fff !important;
   font-size: 14px !important;
+  display: block !important;
+  width: 160px !important;
+  height: 40px !important;
+  margin-top: 12px !important;
+  background-image: url('/theme/logo.png') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-position: left center !important;
+  text-indent: -9999px !important;
+  overflow: hidden !important;
+  filter: brightness(0) invert(1) !important;
+  mix-blend-mode: screen !important;
+  transition: opacity 0.3s ease !important;
+}
+.VPNavBarTitle .title:hover {
+  opacity: 0.8 !important;
 }
 .VPNavBarMenuLink,
 .VPNavBarMenuGroup .text {
@@ -517,12 +535,6 @@ div[class*='language-'] span.line { color: #e8e8e8; }
 ::-webkit-scrollbar-thumb { background: #2a2a2a; }
 ::-webkit-scrollbar-thumb:hover { background: var(--ef-yellow); }
 
-@keyframes ef-reveal-up {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-.VPContent.is-home .VPHome { animation: ef-reveal-up 600ms ease-out; }
-
 .VPDocOutlineItem .outline-link { font-size: 12px; color: #555; }
 .VPDocOutlineItem .outline-link.active { color: var(--ef-yellow) !important; }
 .VPLastUpdated { font-family: 'Share Tech Mono', monospace; font-size: 10px !important; color: #444 !important; }
@@ -595,7 +607,7 @@ html:not(.dark) .VPNavBar .divider-line {
   background: linear-gradient(90deg, #bcb30a 0%, #bcb30a 20%, transparent 20%) !important;
 }
 
-html:not(.dark) .VPNavBarTitle .title { color: #1a1a1a !important; }
+html:not(.dark) .VPNavBarTitle .title { color: #1a1a1a !important; filter: none !important; mix-blend-mode: normal !important; }
 
 html:not(.dark) .VPNavBarMenuLink,
 html:not(.dark) .VPNavBarMenuGroup .text {
@@ -793,35 +805,6 @@ html:not(.dark) .VPContent .vp-doc a[href^="/blog/"]:hover {
    亮色模式 — Hero装饰元素
    ═══════════════════════════════════════════════════════════ */
 
-html:not(.dark) .ef-hero-stripes {
-  background: repeating-linear-gradient(-55deg, rgba(180,170,0,0.03), rgba(180,170,0,0.03) 1px, transparent 1px, transparent 5px);
-}
-
-html:not(.dark) .ef-hero-yellow-block {
-  background: #bcb30a;
-  opacity: 0.04 !important;
-}
-
-html:not(.dark) .ef-hero-watermark {
-  color: rgba(0,0,0,0.03);
-}
-
-html:not(.dark) .ef-hero-vbar {
-  background: linear-gradient(180deg, transparent, #bcb30a 30%, #bcb30a 70%, transparent);
-}
-
-html:not(.dark) .ef-hero-hline {
-  background: linear-gradient(90deg, #bcb30a, rgba(188,179,10,0.3) 50%, transparent);
-}
-
-html:not(.dark) .ef-hero-diagonal {
-  background: rgba(180,170,0,0.08);
-}
-
-html:not(.dark) .ef-hero-coord {
-  color: rgba(140,130,0,0.25);
-}
-
 /* ═══════════════════════════════════════════════════════════
    首页背景网格纹理
    ═══════════════════════════════════════════════════════════ */
@@ -982,17 +965,6 @@ html:not(.dark) .ef-dropzone-btn:hover { border-color: #bcb30a; color: #8a8500; 
 html:not(.dark) .ef-textarea { background: #fff; color: #333; }
 html:not(.dark) .ef-textarea::placeholder { color: #bbb; }
 html:not(.dark) .ef-statusbar { background: #f0f0f0; border-top-color: #e0e0e0; color: #999; }
-
-/* — FeatureCard — */
-html:not(.dark) .ef-card { background: #fff; border-color: #e0e0e0; }
-html:not(.dark) .ef-card:hover { border-color: #ccc; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-html:not(.dark) .ef-card-icon { background: rgba(255,241,0,0.15); border-color: rgba(255,241,0,0.2); }
-html:not(.dark) .ef-card-title { color: #1a1a1a; }
-html:not(.dark) .ef-card-desc { color: #666; }
-html:not(.dark) .ef-card-link-text { color: #888; }
-html:not(.dark) .ef-card-link svg { color: #888; }
-html:not(.dark) .ef-card-link:hover .ef-card-link-text { color: #8a8500; }
-html:not(.dark) .ef-card-link:hover svg { color: #8a8500; }
 
 /* — ProjectCard — */
 html:not(.dark) .ef-project { background: #fff; border-color: #e0e0e0; }

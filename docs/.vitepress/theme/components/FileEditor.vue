@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 // 密码保护 — 使用 hash 校验，密码不以明文存储在源码中
 const isAuthed = ref(false)
 const passwordInput = ref('')
 const passwordError = ref('')
 const STORAGE_KEY = 'ef_editor_auth'
+const showHelp = ref(false)
 
 async function hashPassword(str) {
   const buf = new TextEncoder().encode(str)
@@ -15,7 +16,7 @@ async function hashPassword(str) {
 
 async function checkPassword() {
   const h = await hashPassword(passwordInput.value)
-  // terminus2024 的 SHA-256
+// Client-side password authentication disabled; use server-side authentication.
   if (false) {
     isAuthed.value = true
     passwordError.value = ''
@@ -46,6 +47,8 @@ const activeTab = ref('edit')
 const dragOver = ref(false)
 const charCount = ref(0)
 const lineCount = ref(0)
+const snippetCopied = ref(false)
+const textareaRef = ref(null)
 
 function updateStats() {
   charCount.value = fileContent.value.length
@@ -73,21 +76,48 @@ function readFile(file) {
     updateStats()
     renderPreview()
   }
+  reader.onerror = () => {
+    fileName.value = ''
+    alert('FILE READ ERROR')
+  }
   reader.readAsText(file)
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function renderPreview() {
   let md = fileContent.value
+  // 1. 提取代码块，防止内部被处理
+  const codeBlocks = []
+  md = md.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    codeBlocks.push(`<pre><code class="language-${lang}">${escapeHtml(code)}</code></pre>`)
+    return `\x00CB${codeBlocks.length - 1}\x00`
+  })
+  // 2. 提取行内代码
+  const inlineCodes = []
+  md = md.replace(/`([^`]+)`/g, (_, code) => {
+    inlineCodes.push(`<code>${escapeHtml(code)}</code>`)
+    return `\x00IC${inlineCodes.length - 1}\x00`
+  })
+  // 3. HTML 转义剩余内容
+  md = escapeHtml(md)
+  // 4. 处理标题
   md = md.replace(/^### (.+)$/gm, '<h3>$1</h3>')
   md = md.replace(/^## (.+)$/gm, '<h2>$1</h2>')
   md = md.replace(/^# (.+)$/gm, '<h1>$1</h1>')
+  // 5. 处理粗体和斜体
   md = md.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   md = md.replace(/\*(.+?)\*/g, '<em>$1</em>')
-  md = md.replace(/`([^`]+)`/g, '<code>$1</code>')
+  // 6. 处理列表
   md = md.replace(/^- (.+)$/gm, '<li>$1</li>')
+  // 7. 段落
   md = md.replace(/\n\n/g, '</p><p>')
   md = '<p>' + md + '</p>'
-  md = md.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
+  // 8. 还原代码块和行内代码
+  md = md.replace(/\x00CB(\d+)\x00/g, (_, i) => codeBlocks[i])
+  md = md.replace(/\x00IC(\d+)\x00/g, (_, i) => inlineCodes[i])
   previewHtml.value = md
 }
 
@@ -118,11 +148,136 @@ function newFile() {
   updateStats()
 }
 
+function newBlog() {
+  const today = new Date().toISOString().slice(0, 10)
+  fileContent.value = `---
+title: "文章标题"
+date: ${today}
+description: "文章简介"
+tags: ["TAG"]
+---
+
+# 文章标题
+
+在这里开始写作...
+`
+  fileName.value = 'new-post.md'
+  fileLoaded.value = true
+  updateStats()
+}
+
+function generateSnippet() {
+  const name = fileName.value.replace(/\.md$/, '')
+  const title = fileContent.value.match(/^title:\s*"?([^"\n]+)"?/m)?.[1] || name
+  const date = fileContent.value.match(/^date:\s*(\S+)/m)?.[1] || new Date().toISOString().slice(0, 10)
+  const tags = fileContent.value.match(/^tags:\s*\[(.+?)\]/m)?.[1] || '"TAG"'
+  const tag = tags.replace(/["\s]/g, '').split(',')[0]
+
+  fetch('/blog-list.json')
+    .then(r => r.json())
+    .catch(() => [])
+    .then(list => {
+      if (!Array.isArray(list)) list = []
+      const num = String(list.length + 1).padStart(2, '0')
+      const entry = `  {
+    "num": "${num}",
+    "id": "TX-${num}",
+    "title": "${title}",
+    "date": "${date}",
+    "tag": "${tag}",
+    "link": "/blog/${name}"
+  }`
+      navigator.clipboard.writeText(entry)
+      snippetCopied.value = true
+      setTimeout(() => snippetCopied.value = false, 2000)
+    })
+}
+
+function downloadBlogList() {
+  const name = fileName.value.replace(/\.md$/, '')
+  const title = fileContent.value.match(/^title:\s*"?([^"\n]+)"?/m)?.[1] || name
+  const date = fileContent.value.match(/^date:\s*(\S+)/m)?.[1] || new Date().toISOString().slice(0, 10)
+  const tags = fileContent.value.match(/^tags:\s*\[(.+?)\]/m)?.[1] || '"TAG"'
+  const tag = tags.replace(/["\s]/g, '').split(',')[0]
+
+  fetch('/blog-list.json')
+    .then(r => r.json())
+    .catch(() => [])
+    .then(list => {
+      if (!Array.isArray(list)) list = []
+      const exists = list.some(p => p.link === `/blog/${name}`)
+      if (!exists) {
+        const num = String(list.length + 1).padStart(2, '0')
+        list.push({
+          num,
+          id: `TX-${num}`,
+          title,
+          date,
+          tag,
+          link: `/blog/${name}`
+        })
+      }
+      const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'blog-list.json'
+      a.click()
+      URL.revokeObjectURL(url)
+    })
+}
+
 function clearEditor() {
   fileContent.value = ''
   fileName.value = ''
   fileLoaded.value = false
   previewHtml.value = ''
+}
+
+// ══ 图片粘贴/拖拽 ════════════════════════════════════════════════
+function insertImageAtCursor(dataUrl, name) {
+  const ta = textareaRef.value
+  const md = `\n![${name}](${dataUrl})\n`
+  if (ta) {
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    fileContent.value = fileContent.value.slice(0, start) + md + fileContent.value.slice(end)
+    nextTick(() => {
+      ta.selectionStart = ta.selectionEnd = start + md.length
+      ta.focus()
+    })
+  } else {
+    fileContent.value += md
+  }
+  updateStats()
+}
+
+function handlePaste(e) {
+  const items = e.clipboardData?.items
+  if (!items) return
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault()
+      const file = item.getAsFile()
+      const reader = new FileReader()
+      reader.onload = (ev) => insertImageAtCursor(ev.target.result, file.name || 'image')
+      reader.readAsDataURL(file)
+      return
+    }
+  }
+}
+
+function handleImageDrop(e) {
+  const files = e.dataTransfer?.files
+  if (!files) return
+  for (const file of files) {
+    if (file.type.startsWith('image/')) {
+      e.preventDefault()
+      const reader = new FileReader()
+      reader.onload = (ev) => insertImageAtCursor(ev.target.result, file.name)
+      reader.readAsDataURL(file)
+    }
+  }
 }
 </script>
 
@@ -165,7 +320,7 @@ function clearEditor() {
           </svg>
         </span>
         <span class="ef-editor-label">TERMINAL</span>
-        <span class="ef-editor-filename" v-if="fileName">{{ fileName }}</span>
+        <input v-if="fileLoaded" v-model="fileName" class="ef-editor-filename-input" spellcheck="false" />
       </div>
       <div class="ef-editor-stats">
         <span>{{ lineCount }} lines</span>
@@ -176,19 +331,32 @@ function clearEditor() {
 
     <!-- 工具栏 -->
     <div class="ef-editor-toolbar">
-      <div class="ef-editor-tabs">
-        <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'edit' }]" @click="switchTab('edit')">EDIT</button>
-        <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'preview' }]" @click="switchTab('preview')">PREVIEW</button>
+      <div class="ef-toolbar-row">
+        <div class="ef-editor-tabs">
+          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'edit' }]" @click="switchTab('edit')">EDIT</button>
+          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'preview' }]" @click="switchTab('preview')">PREVIEW</button>
+        </div>
       </div>
-      <div class="ef-editor-actions">
-        <button class="ef-btn" @click="newFile">+ NEW</button>
-        <label class="ef-btn">
-          UPLOAD
-          <input type="file" accept=".md,.txt,.c,.h,.py,.js,.css,.html,.json" @change="handleFileSelect" hidden />
-        </label>
-        <button class="ef-btn" @click="downloadFile" :disabled="!fileLoaded">EXPORT</button>
-        <button v-if="fileLoaded" class="ef-btn ef-btn--danger" @click="clearEditor">CLEAR</button>
-        <button class="ef-btn ef-btn--lock" @click="lockEditor">🔒 LOCK</button>
+      <div class="ef-toolbar-row">
+        <div class="ef-editor-actions">
+          <button class="ef-btn" @click="newFile">+ NEW</button>
+          <button class="ef-btn ef-btn--blog" @click="newBlog">+ BLOG</button>
+          <label class="ef-btn">
+            UPLOAD
+            <input type="file" accept=".md,.txt,.c,.h,.py,.js,.css,.html,.json" @change="handleFileSelect" hidden />
+          </label>
+          <span class="ef-toolbar-sep"></span>
+          <button class="ef-btn" @click="downloadFile" :disabled="!fileLoaded">EXPORT</button>
+          <button v-if="fileLoaded" class="ef-btn" @click="generateSnippet">
+            {{ snippetCopied ? '✓ COPIED' : 'COPY ENTRY' }}
+          </button>
+          <button v-if="fileLoaded && fileName.endsWith('.md')" class="ef-btn ef-btn--blog" @click="downloadBlogList">↓ LIST</button>
+        </div>
+        <div class="ef-editor-actions">
+          <button class="ef-btn ef-btn--help" @click="showHelp = true">? HELP</button>
+          <button v-if="fileLoaded" class="ef-btn ef-btn--danger" @click="clearEditor">CLEAR</button>
+          <button class="ef-btn ef-btn--lock" @click="lockEditor">🔒 LOCK</button>
+        </div>
       </div>
     </div>
 
@@ -214,8 +382,9 @@ function clearEditor() {
     </div>
 
     <div v-else class="ef-editor-body">
-      <textarea v-if="activeTab === 'edit'" v-model="fileContent" @input="handleInput"
-        class="ef-textarea" spellcheck="false" placeholder="Start typing..."></textarea>
+      <textarea v-if="activeTab === 'edit'" ref="textareaRef" v-model="fileContent"
+        @input="handleInput" @paste="handlePaste" @drop.prevent="handleImageDrop" @dragover.prevent
+        class="ef-textarea" spellcheck="false" placeholder="Start typing... (paste or drop images)"></textarea>
       <div v-else class="ef-preview vp-doc" v-html="previewHtml"></div>
     </div>
 
@@ -226,6 +395,81 @@ function clearEditor() {
       <span class="ef-status-right">UTF-8 | MARKDOWN</span>
     </div>
   </div>
+
+  <!-- ══ 帮助弹窗 ═══════════════════════════════════════ -->
+  <Teleport to="body">
+    <div v-if="showHelp" class="ef-help-overlay" @click.self="showHelp = false">
+      <div class="ef-help-box">
+        <p class="ef-help-title">EDITOR GUIDE</p>
+        <div class="ef-help-content">
+          <div class="ef-help-section">
+            <p class="ef-help-section-title">通用文件编辑</p>
+            <div class="ef-help-step">
+              <span class="ef-help-num">01</span>
+              <div>
+                <p class="ef-help-step-title">创建或上传文件</p>
+                <p class="ef-help-step-desc">点击 + NEW 新建，或拖拽/UPLOAD 上传已有文件</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">02</span>
+              <div>
+                <p class="ef-help-step-title">编辑内容</p>
+                <p class="ef-help-step-desc">在 EDIT 标签页编写，PREVIEW 标签页预览效果</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">03</span>
+              <div>
+                <p class="ef-help-step-title">导出文件</p>
+                <p class="ef-help-step-desc">点击 EXPORT 下载文件，放入对应目录后提交推送</p>
+              </div>
+            </div>
+          </div>
+          <div class="ef-help-divider"></div>
+          <div class="ef-help-section">
+            <p class="ef-help-section-title">写博客</p>
+            <div class="ef-help-step">
+              <span class="ef-help-num">01</span>
+              <div>
+                <p class="ef-help-step-title">创建博客模板</p>
+                <p class="ef-help-step-desc">点击 + BLOG 自动生成带 frontmatter 的模板</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">02</span>
+              <div>
+                <p class="ef-help-step-title">编写文章</p>
+                <p class="ef-help-step-desc">修改文件名、编辑 frontmatter 和正文内容</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">03</span>
+              <div>
+                <p class="ef-help-step-title">导出文件</p>
+                <p class="ef-help-step-desc">EXPORT 下载 .md → 放入 docs/blog/</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">04</span>
+              <div>
+                <p class="ef-help-step-title">更新博客列表</p>
+                <p class="ef-help-step-desc">↓ LIST 下载 blog-list.json → 替换 docs/public/blog-list.json</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">05</span>
+              <div>
+                <p class="ef-help-step-title">提交推送</p>
+                <p class="ef-help-step-desc">git add + commit + push，GitHub Actions 自动部署</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="ef-help-close" @click="showHelp = false">GOT IT</button>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -311,7 +555,7 @@ function clearEditor() {
   font-family: 'Source Sans 3', sans-serif;
   display: flex;
   flex-direction: column;
-  height: 500px;
+  height: 560px;
   overflow: hidden;
 }
 
@@ -333,17 +577,39 @@ function clearEditor() {
   letter-spacing: 3px;
   color: var(--ef-yellow);
 }
-.ef-editor-filename { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #555; }
+.ef-editor-filename-input {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #888;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 1px 4px;
+  outline: none;
+  width: 160px;
+  transition: border-color 0.2s;
+}
+.ef-editor-filename-input:focus { border-color: #2a2a2a; }
 .ef-editor-stats { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #444; display: flex; gap: 8px; }
 .ef-sep { color: #2a2a2a; }
 
 .ef-editor-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   padding: 4px 12px;
   background: #0e0e0e;
   border-bottom: 1px solid #1a1a1a;
+  gap: 4px;
+}
+.ef-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ef-toolbar-sep {
+  width: 1px;
+  height: 14px;
+  background: #2a2a2a;
+  margin: 0 4px;
 }
 
 .ef-editor-tabs { display: flex; gap: 2px; }
@@ -380,23 +646,52 @@ function clearEditor() {
 }
 .ef-btn:hover { border-color: var(--ef-yellow); color: var(--ef-yellow); }
 .ef-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.ef-btn--blog { border-color: rgba(0,255,162,0.3); color: rgba(0,255,162,0.7); }
+.ef-btn--blog:hover { border-color: #00ffa2; color: #00ffa2; }
 .ef-btn--danger:hover { border-color: #ff4060; color: #ff4060; }
 .ef-btn--lock { margin-left: auto; }
+.ef-btn--help { border-color: rgba(0,255,162,0.3); color: #00ffa2; }
+.ef-btn--help:hover { border-color: #00ffa2; color: #00ffa2; background: rgba(0,255,162,0.06); }
 
-.ef-btn-sm {
-  font-family: 'Source Sans 3', sans-serif;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  padding: 4px 10px;
-  background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #666;
-  cursor: pointer;
-  transition: all 0.2s;
+/* ══ 帮助弹窗 ════════════════════════════════════════════ */
+.ef-help-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
 }
-.ef-btn-sm:hover { border-color: var(--ef-yellow); color: var(--ef-yellow); }
-.ef-btn-sm--danger:hover { border-color: #ff4060; color: #ff4060; }
+.ef-help-box {
+  background: #161616; border: 1px solid #333; padding: 32px; max-width: 460px; width: 90vw;
+  max-height: 80vh; overflow-y: auto;
+}
+.ef-help-title {
+  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px;
+  letter-spacing: 4px; color: var(--ef-yellow); margin: 0 0 20px;
+}
+.ef-help-content { display: flex; flex-direction: column; gap: 0; }
+.ef-help-section { margin-bottom: 8px; }
+.ef-help-section-title {
+  font-family: 'Source Sans 3', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; color: #aaa; text-transform: uppercase; margin: 0 0 12px;
+}
+.ef-help-divider { height: 1px; background: #333; margin: 8px 0 16px; }
+.ef-help-step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+.ef-help-num {
+  font-family: 'Inter', sans-serif; font-weight: 900; font-size: 16px;
+  color: rgba(255,241,0,0.35); min-width: 26px; line-height: 1;
+}
+.ef-help-step-title {
+  font-family: 'Source Sans 3', sans-serif; font-size: 12px; font-weight: 700;
+  color: #e0e0e0; margin: 0 0 1px;
+}
+.ef-help-step-desc {
+  font-size: 11px; color: #999; margin: 0; line-height: 1.4;
+}
+.ef-help-close {
+  margin-top: 20px; width: 100%; padding: 10px;
+  background: rgba(255,241,0,0.06); border: 1px solid rgba(255,241,0,0.2); color: var(--ef-yellow);
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px;
+  letter-spacing: 3px; cursor: pointer; transition: all 0.2s;
+}
+.ef-help-close:hover { background: rgba(255,241,0,0.12); border-color: var(--ef-yellow); }
 
 /* 拖拽区 */
 .ef-dropzone {

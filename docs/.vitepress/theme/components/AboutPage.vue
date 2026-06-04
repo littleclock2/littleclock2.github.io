@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 
 const STORAGE_PREFIX = 'ef_about_'
 const sKey = (k) => STORAGE_PREFIX + k
@@ -10,6 +10,7 @@ const showPwdModal = ref(false)
 const pwdInput = ref('')
 const pwdError = ref('')
 const AUTH_KEY = 'ef_about_edit_auth'
+const showHelp = ref(false)
 
 async function hashStr(s) {
   const buf = new TextEncoder().encode(s)
@@ -45,26 +46,35 @@ function lockEdit() {
   localStorage.removeItem(AUTH_KEY)
 }
 
-const profile = ref(load('profile', {
+// ══ 从仓库 JSON 加载默认数据 ════════════════════════════════
+async function fetchAboutData() {
+  try {
+    const res = await fetch('/about-data.json')
+    if (!res.ok) return null
+    return await res.json()
+  } catch { return null }
+}
+
+const profile = ref({
   name: 'YUNSWORD',
   role: '嵌入式开发工程师 · MCU · 硬件设计',
   quote: '「在比特与电子之间，寻找无限可能。」'
-}))
+})
 
-const skills = ref(load('skills', [
+const skills = ref([
   { name: 'MCU 开发', pct: 95, tools: 'STM32 · TI MSPM0' },
   { name: '开发环境', pct: 88, tools: 'Keil · IAR · CCS' },
   { name: '编程语言', pct: 88, tools: 'C · C++ · Python' },
   { name: 'PCB 设计', pct: 78, tools: 'Altium Designer · KiCad' },
   { name: 'Android', pct: 68, tools: 'Kotlin · Java' },
-]))
+])
 
-const fields = ref(load('fields', [
+const fields = ref([
   { icon: '▸', title: '嵌入式系统设计', desc: '从需求分析到固件实现' },
   { icon: '▸', title: '模拟电路设计', desc: '信号链、电源管理、传感器接口' },
   { icon: '▸', title: '信号处理', desc: '数字滤波、FFT、调制解调' },
   { icon: '▸', title: '仪器仪表开发', desc: 'LC 表、万用表、信号发生器' },
-]))
+])
 
 const avatarUrl = ref(load('avatar', ''))
 const showcaseImages = ref(load('showcase', []))
@@ -84,6 +94,20 @@ watch(skills, (v) => save('skills', v), { deep: true })
 watch(fields, (v) => save('fields', v), { deep: true })
 watch(avatarUrl, (v) => save('avatar', v))
 watch(showcaseImages, (v) => save('showcase', v), { deep: true })
+
+// ══ 初始化：localStorage > JSON > 硬编码默认值 ════════════════
+onMounted(async () => {
+  if (!localStorage.getItem(sKey('profile'))) {
+    const data = await fetchAboutData()
+    if (data) {
+      if (data.profile) profile.value = data.profile
+      if (data.skills) skills.value = data.skills
+      if (data.fields) fields.value = data.fields
+      if (data.avatarUrl) avatarUrl.value = data.avatarUrl
+      if (data.showcaseImages) showcaseImages.value = data.showcaseImages
+    }
+  }
+})
 
 // ══ 裁剪 ════════════════════════════════════════════════
 const cropVisible = ref(false)
@@ -259,13 +283,56 @@ function addField() {
 function removeField(i) {
   fields.value.splice(i, 1)
 }
+
+// ══ 导出 JSON + 图片到仓库 ════════════════════════════════════════════════
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function base64ToBlob(dataUrl) {
+  return fetch(dataUrl).then(r => r.blob())
+}
+
+function exportData() {
+  // 1. 构建 JSON（图片用 URL 路径）
+  const data = {
+    profile: profile.value,
+    skills: skills.value,
+    fields: fields.value,
+    avatarUrl: avatarUrl.value.startsWith('data:') ? '/about/avatar.jpg' : avatarUrl.value,
+    showcaseImages: showcaseImages.value.map((img, i) => ({
+      url: img.url.startsWith('data:') ? `/about/showcase-${i + 1}.jpg` : img.url,
+      name: img.name
+    }))
+  }
+  downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'about-data.json')
+
+  // 2. 下载头像
+  if (avatarUrl.value.startsWith('data:')) {
+    base64ToBlob(avatarUrl.value).then(blob => downloadBlob(blob, 'avatar.jpg'))
+  }
+
+  // 3. 下载立绘图片
+  showcaseImages.value.forEach((img, i) => {
+    if (img.url.startsWith('data:')) {
+      base64ToBlob(img.url).then(blob => downloadBlob(blob, `showcase-${i + 1}.jpg`))
+    }
+  })
+}
 </script>
 
 <template>
   <div class="ef-about">
     <!-- 编辑模式切换 -->
     <div class="ef-about-toolbar">
+      <button class="ef-about-edit-btn ef-about-edit-btn--help" @click="showHelp = true">? HELP</button>
       <template v-if="isEditing">
+        <button class="ef-about-edit-btn ef-about-edit-btn--export" @click="exportData">↓ EXPORT</button>
         <button class="ef-about-edit-btn ef-about-edit-btn--lock" @click="lockEdit">🔒 LOCK</button>
         <button class="ef-about-edit-btn ef-about-edit-btn--active" @click="isEditing = false">✓ DONE</button>
       </template>
@@ -458,6 +525,53 @@ function removeField(i) {
             <button class="ef-crop-btn ef-crop-cancel" @click="cancelCrop">CANCEL</button>
             <button class="ef-crop-btn ef-crop-confirm" @click="confirmCrop">CONFIRM</button>
           </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ══ 帮助弹窗 ═══════════════════════════════════════ -->
+    <Teleport to="body">
+      <div v-if="showHelp" class="ef-help-overlay" @click.self="showHelp = false">
+        <div class="ef-help-box">
+          <p class="ef-help-title">EDITING GUIDE</p>
+          <div class="ef-help-content">
+            <div class="ef-help-step">
+              <span class="ef-help-num">01</span>
+              <div>
+                <p class="ef-help-step-title">进入编辑模式</p>
+                <p class="ef-help-step-desc">点击 EDIT → 输入密码 → 进入编辑模式</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">02</span>
+              <div>
+                <p class="ef-help-step-title">编辑内容</p>
+                <p class="ef-help-step-desc">修改名字、技能、领域等文本，上传头像和立绘</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">03</span>
+              <div>
+                <p class="ef-help-step-title">完成编辑</p>
+                <p class="ef-help-step-desc">点击 DONE 保存到浏览器本地</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">04</span>
+              <div>
+                <p class="ef-help-step-title">导出到仓库</p>
+                <p class="ef-help-step-desc">点击 EXPORT 下载 JSON + 图片文件</p>
+              </div>
+            </div>
+            <div class="ef-help-step">
+              <span class="ef-help-num">05</span>
+              <div>
+                <p class="ef-help-step-title">提交推送</p>
+                <p class="ef-help-step-desc">将下载的文件放入 docs/public/about/ 目录，git commit & push</p>
+              </div>
+            </div>
+          </div>
+          <button class="ef-help-close" @click="showHelp = false">GOT IT</button>
         </div>
       </div>
     </Teleport>
@@ -657,6 +771,43 @@ function removeField(i) {
 .ef-pwd-btn:hover { background: #ffe800; }
 .ef-pwd-error { color: #ff4060; font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 2px; margin-top: 12px; }
 .ef-about-edit-btn--lock { margin-right: 8px; }
+.ef-about-edit-btn--export { margin-right: 8px; border-color: rgba(0,255,162,0.3); color: rgba(0,255,162,0.7); }
+.ef-about-edit-btn--export:hover { border-color: #00ffa2; color: #00ffa2; }
+.ef-about-edit-btn--help { margin-right: auto; border-color: rgba(0,255,162,0.3); color: #00ffa2; }
+.ef-about-edit-btn--help:hover { border-color: #00ffa2; color: #00ffa2; background: rgba(0,255,162,0.06); }
+
+/* ══ 帮助弹窗 ════════════════════════════════════════════ */
+.ef-help-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+}
+.ef-help-box {
+  background: #161616; border: 1px solid #333; padding: 32px; max-width: 420px; width: 90vw;
+}
+.ef-help-title {
+  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px;
+  letter-spacing: 4px; color: var(--ef-yellow); margin: 0 0 24px;
+}
+.ef-help-content { display: flex; flex-direction: column; gap: 16px; }
+.ef-help-step { display: flex; gap: 14px; align-items: flex-start; }
+.ef-help-num {
+  font-family: 'Inter', sans-serif; font-weight: 900; font-size: 18px;
+  color: rgba(255,241,0,0.35); min-width: 30px; line-height: 1;
+}
+.ef-help-step-title {
+  font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 700;
+  color: #e0e0e0; margin: 0 0 2px;
+}
+.ef-help-step-desc {
+  font-size: 12px; color: #999; margin: 0; line-height: 1.5;
+}
+.ef-help-close {
+  margin-top: 24px; width: 100%; padding: 10px;
+  background: rgba(255,241,0,0.06); border: 1px solid rgba(255,241,0,0.2); color: var(--ef-yellow);
+  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px;
+  letter-spacing: 3px; cursor: pointer; transition: all 0.2s;
+}
+.ef-help-close:hover { background: rgba(255,241,0,0.12); border-color: var(--ef-yellow); }
 
 /* ══ 裁剪弹窗 ════════════════════════════════════════════ */
 .ef-crop-overlay {

@@ -418,4 +418,22 @@ onUnmounted(() => {
 
 .t-status-text { text-transform: uppercase; }
 .t-status-sep { color: rgba(255,241,0,0.1); }
+
+/* ═══ 响应式 ═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .t-hero-coord { font-size: 8px; letter-spacing: 1px; }
+  .t-hero-coord--tl { top: 16px; left: 4%; }
+  .t-hero-coord--tr { top: 16px; right: 4%; }
+  .t-hero-coord--bl { bottom: 50px; left: 4%; }
+  .t-hero-coord--br { bottom: 50px; right: 4%; }
+  .t-corner { width: 14px; height: 14px; }
+  .t-corner--tl { top: 12px; left: 12px; }
+  .t-corner--tr { top: 12px; right: 12px; }
+  .t-corner--bl { bottom: 12px; left: 12px; }
+  .t-corner--br { bottom: 12px; right: 12px; }
+  .t-hero-statusbar { font-size: 7px; gap: 6px; bottom: 12px; }
+  .t-hex { display: none; }
+  .t-circuit { height: 150px; }
+  .t-hero-vbar, .t-hero-hline { display: none; }
+}
 </style>

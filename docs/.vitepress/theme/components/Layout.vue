@@ -3,6 +3,7 @@ import { useData } from 'vitepress'
 import { ref, onMounted } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import HeroSection from './HeroSection.vue'
+import ClickEffects from './ClickEffects.vue'
 
 const { frontmatter } = useData()
 const { Layout: DefaultLayout } = DefaultTheme
@@ -13,6 +14,15 @@ const stats = ref([
   { label: 'STAR', value: '15+', icon: '◇' },
   { label: 'LANGUAGES', value: '5', icon: '◉' },
 ])
+
+const blogPosts = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/blog-list.json')
+    if (res.ok) blogPosts.value = await res.json()
+  } catch {}
+})
 </script>
 
 <template>
@@ -49,31 +59,13 @@ const stats = ref([
           </div>
           <div class="t-section-body">
             <div class="t-transmission-list">
-              <a href="/blog/stm32-frequency-measurement" class="t-transmission">
-                <span class="t-tx-num">01</span>
+              <a v-for="post in blogPosts" :key="post.id" :href="post.link" class="t-transmission">
+                <span class="t-tx-num">{{ post.num }}</span>
                 <span class="t-tx-status"></span>
-                <span class="t-tx-id">TX-001</span>
-                <span class="t-tx-title">STM32 频率测量实践</span>
-                <span class="t-tx-date">2026-05-26</span>
-                <span class="t-tx-tag">STM32</span>
-                <span class="t-tx-arrow">→</span>
-              </a>
-              <a href="/blog/mspm0-lc-meter" class="t-transmission">
-                <span class="t-tx-num">02</span>
-                <span class="t-tx-status"></span>
-                <span class="t-tx-id">TX-002</span>
-                <span class="t-tx-title">MSPM0 LC 表设计</span>
-                <span class="t-tx-date">2026-05-26</span>
-                <span class="t-tx-tag">MSPM0</span>
-                <span class="t-tx-arrow">→</span>
-              </a>
-              <a href="/blog/ad9833-dds-signal-generator" class="t-transmission">
-                <span class="t-tx-num">03</span>
-                <span class="t-tx-status"></span>
-                <span class="t-tx-id">TX-003</span>
-                <span class="t-tx-title">AD9833 DDS 信号发生器</span>
-                <span class="t-tx-date">2026-05-26</span>
-                <span class="t-tx-tag">DDS</span>
+                <span class="t-tx-id">{{ post.id }}</span>
+                <span class="t-tx-title">{{ post.title }}</span>
+                <span class="t-tx-date">{{ post.date }}</span>
+                <span class="t-tx-tag">{{ post.tag }}</span>
                 <span class="t-tx-arrow">→</span>
               </a>
             </div>
@@ -159,6 +151,7 @@ const stats = ref([
       </div>
     </template>
   </DefaultLayout>
+  <ClickEffects />
 </template>
 
 <style scoped>
@@ -454,6 +447,9 @@ const stats = ref([
 .t-section-link:hover svg { transform: translateX(4px); }
 
 /* ═══ Responsive ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .t-stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
 @media (max-width: 768px) {
   .t-home-sections { padding: 40px 6% 80px; }
   .t-stats-grid { grid-template-columns: repeat(2, 1fr); }

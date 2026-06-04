@@ -1,3 +1,10 @@
+---
+title: "MSPM0 LC 表设计"
+date: 2026-05-26
+description: "基于 TI MSPM0 MCU 的高精度 LC 表设计，测量电感与电容"
+tags: ["MSPM0", "LC表", "仪器仪表"]
+---
+
 # MSPM0 LC 表设计
 
 ## 项目简介

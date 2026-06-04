@@ -16,7 +16,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    siteTitle: 'YUNSWORD',
+    siteTitle: false,
     sidebar: false,
 
     nav: [
@@ -33,7 +33,7 @@ export default defineConfig({
 
     footer: {
       message: 'TERMINUS · YUNSWORD',
-      copyright: '© 2026 YunSword'
+      copyright: `© ${new Date().getFullYear()} YunSword`
     },
 
     search: {
