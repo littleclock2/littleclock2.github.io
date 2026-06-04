@@ -21,7 +21,7 @@ export const messages = {
     },
     home: {
       hero: {
-        tagline: '在比特与电子之间，寻找无限可能',
+        tagline: '相信的心就是你的魔法！',
         blogBtn: '进入博客',
         projectBtn: '查看项目',
       },
@@ -195,7 +195,7 @@ export const messages = {
     },
     home: {
       hero: {
-        tagline: 'Exploring infinite possibilities between bits and electrons',
+        tagline: 'Believing heart is your magic!',
         blogBtn: 'Enter Blog',
         projectBtn: 'View Projects',
       },
@@ -369,7 +369,7 @@ export const messages = {
     },
     home: {
       hero: {
-        tagline: '在位元與電子之間，探索無限可能',
+        tagline: '相信的心就是你的魔法！',
         blogBtn: '進入部落格',
         projectBtn: '查看專案',
       },

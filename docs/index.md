@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "YUN SWORD"
   text: "MCU · EMBEDDED · HARDWARE"
-  tagline: "在比特与电子之间，寻找无限可能"
+  tagline: "相信的心就是你的魔法！"
   actions:
     - theme: brand
       text: 进入博客
