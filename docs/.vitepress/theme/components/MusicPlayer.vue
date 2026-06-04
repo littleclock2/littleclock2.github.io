@@ -239,7 +239,7 @@ onUnmounted(() => {
 <style scoped>
 .ef-music {
   position: fixed;
-  bottom: 24px;
+  bottom: 80px;
   right: 24px;
   z-index: 50;
   display: flex;
