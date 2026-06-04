@@ -80,7 +80,7 @@ function readFile(file) {
   }
   reader.onerror = () => {
     fileName.value = ''
-    alert('FILE READ ERROR')
+    alert(T.value.editor.strings.fileReadError)
   }
   reader.readAsText(file)
 }
@@ -144,7 +144,7 @@ function downloadFile() {
 }
 
 function newFile() {
-  fileContent.value = '# New Document\n\nStart writing here...'
+  fileContent.value = `# ${T.value.editor.strings.newDocTitle}\n\n${T.value.editor.strings.newDocContent}`
   fileName.value = 'untitled.md'
   fileLoaded.value = true
   updateStats()
@@ -152,16 +152,17 @@ function newFile() {
 
 function newBlog() {
   const today = new Date().toISOString().slice(0, 10)
+  const s = T.value.editor.strings
   fileContent.value = `---
-title: "文章标题"
+title: "${s.blogTitle}"
 date: ${today}
-description: "文章简介"
+description: "${s.blogTitle}"
 tags: ["TAG"]
 ---
 
-# 文章标题
+# ${s.blogTitle}
 
-在这里开始写作...
+${s.blogContent}
 `
   fileName.value = 'new-post.md'
   fileLoaded.value = true
@@ -325,9 +326,9 @@ function handleImageDrop(e) {
         <input v-if="fileLoaded" v-model="fileName" class="ef-editor-filename-input" spellcheck="false" />
       </div>
       <div class="ef-editor-stats">
-        <span>{{ lineCount }} lines</span>
+        <span>{{ lineCount }} {{ T.editor.strings.lines }}</span>
         <span class="ef-sep">|</span>
-        <span>{{ charCount }} chars</span>
+        <span>{{ charCount }} {{ T.editor.strings.chars }}</span>
       </div>
     </div>
 
@@ -386,7 +387,7 @@ function handleImageDrop(e) {
     <div v-else class="ef-editor-body">
       <textarea v-if="activeTab === 'edit'" ref="textareaRef" v-model="fileContent"
         @input="handleInput" @paste="handlePaste" @drop.prevent="handleImageDrop" @dragover.prevent
-        class="ef-textarea" spellcheck="false" placeholder="Start typing... (paste or drop images)"></textarea>
+        class="ef-textarea" spellcheck="false" :placeholder="T.editor.strings.placeholder"></textarea>
       <div v-else class="ef-preview vp-doc" v-html="previewHtml"></div>
     </div>
 

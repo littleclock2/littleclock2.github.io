@@ -6,6 +6,19 @@ export const locale = ref('zh-CN')
 
 export const messages = {
   'zh-CN': {
+    nav: {
+      home: '首页',
+      blog: '博客',
+      projects: '项目',
+      editor: '编辑器',
+      about: '关于',
+    },
+    stats: {
+      projects: '项目',
+      commits: '提交',
+      star: '收藏',
+      languages: '语言',
+    },
     home: {
       hero: {
         tagline: '在比特与电子之间，寻找无限可能',
@@ -129,8 +142,22 @@ export const messages = {
         ready: 'READY',
         file: 'FILE:',
       },
+      strings: {
+        lines: '行',
+        chars: '字符',
+        placeholder: '开始输入...（粘贴或拖放图片）',
+        newDocTitle: '新文档',
+        newDocContent: '# 新文档\n\n在这里开始写作...',
+        blogTitle: '文章标题',
+        blogAuthor: '作者',
+        blogDate: '日期',
+        blogTag: '标签',
+        blogContent: '在这里开始写作...',
+        fileReadError: '文件读取错误',
+      },
     },
     projects: {
+      repo: '仓库',
       stm32Examples: { desc: 'STM32 基础外设示例集，包含频率测量等基础功能演示' },
       stm32Projects: { desc: '基于 STM32 的完整项目：ADS805E ADC 采集、信号分离处理、运放测量、信号调制识别' },
       mspm0Examples: { desc: 'TI MSPM0 系列 MCU 基础示例，支持 L1306、G3507 开发板，含 AD9833 DDS、贪吃蛇等' },
@@ -153,6 +180,19 @@ export const messages = {
     },
   },
   'en': {
+    nav: {
+      home: 'HOME',
+      blog: 'BLOG',
+      projects: 'PROJECTS',
+      editor: 'EDITOR',
+      about: 'ABOUT',
+    },
+    stats: {
+      projects: 'PROJECTS',
+      commits: 'COMMITS',
+      star: 'STAR',
+      languages: 'LANGUAGES',
+    },
     home: {
       hero: {
         tagline: 'Exploring infinite possibilities between bits and electrons',
@@ -276,8 +316,22 @@ export const messages = {
         ready: 'READY',
         file: 'FILE:',
       },
+      strings: {
+        lines: 'lines',
+        chars: 'chars',
+        placeholder: 'Start typing... (paste or drop images)',
+        newDocTitle: 'New Document',
+        newDocContent: '# New Document\n\nStart writing here...',
+        blogTitle: 'Article Title',
+        blogAuthor: 'Author',
+        blogDate: 'Date',
+        blogTag: 'Tag',
+        blogContent: 'Start writing here...',
+        fileReadError: 'FILE READ ERROR',
+      },
     },
     projects: {
+      repo: 'REPO',
       stm32Examples: { desc: 'STM32 peripheral example collection with frequency measurement demos' },
       stm32Projects: { desc: 'Complete STM32 projects: ADS805E ADC acquisition, signal separation, op-amp measurement, signal modulation recognition' },
       mspm0Examples: { desc: 'TI MSPM0 MCU basic examples for L1306 and G3507 boards, including AD9833 DDS and more' },
@@ -300,6 +354,19 @@ export const messages = {
     },
   },
   'zh-TW': {
+    nav: {
+      home: '首頁',
+      blog: '部落格',
+      projects: '專案',
+      editor: '編輯器',
+      about: '關於',
+    },
+    stats: {
+      projects: '專案',
+      commits: '提交',
+      star: '收藏',
+      languages: '語言',
+    },
     home: {
       hero: {
         tagline: '在位元與電子之間，探索無限可能',
@@ -423,8 +490,22 @@ export const messages = {
         ready: '就緒',
         file: '檔案：',
       },
+      strings: {
+        lines: '行',
+        chars: '字元',
+        placeholder: '開始輸入...（貼上或拖放圖片）',
+        newDocTitle: '新文件',
+        newDocContent: '# 新文件\n\n在這裡開始寫作...',
+        blogTitle: '文章標題',
+        blogAuthor: '作者',
+        blogDate: '日期',
+        blogTag: '標籤',
+        blogContent: '在這裡開始寫作...',
+        fileReadError: '檔案讀取錯誤',
+      },
     },
     projects: {
+      repo: '倉庫',
       stm32Examples: { desc: 'STM32 基礎周邊範例集，包含頻率測量等基礎功能演示' },
       stm32Projects: { desc: '基於 STM32 的完整專案：ADS805E ADC 採集、訊號分離處理、運放測量、訊號調變識別' },
       mspm0Examples: { desc: 'TI MSPM0 系列 MCU 基礎範例，支援 L1306、G3507 開發板，含 AD9833 DDS、貪吃蛇等' },

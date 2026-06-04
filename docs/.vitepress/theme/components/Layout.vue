@@ -1,6 +1,6 @@
 <script setup>
 import { useData, useRoute } from 'vitepress'
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import HeroSection from './HeroSection.vue'
 import ClickEffects from './ClickEffects.vue'
@@ -11,11 +11,11 @@ const route = useRoute()
 const { Layout: DefaultLayout } = DefaultTheme
 const { locale, t, T } = useI18n()
 
-const stats = ref([
-  { label: 'PROJECTS', value: '6+', icon: '◆' },
-  { label: 'COMMITS', value: '200+', icon: '◈' },
-  { label: 'STAR', value: '15+', icon: '◇' },
-  { label: 'LANGUAGES', value: '5', icon: '◉' },
+const stats = computed(() => [
+  { label: T.value.stats.projects, value: '6+', icon: '◆' },
+  { label: T.value.stats.commits, value: '200+', icon: '◈' },
+  { label: T.value.stats.star, value: '15+', icon: '◇' },
+  { label: T.value.stats.languages, value: '5', icon: '◉' },
 ])
 
 const blogPosts = ref([])
@@ -63,8 +63,15 @@ function patchDocUI() {
   if (pagers[1]) { const title = pagers[1].querySelector('.title'); if (title) title.textContent = t('doc.next') }
 }
 
+function patchNavBar() {
+  if (typeof document === 'undefined') return
+  const navLinks = document.querySelectorAll('.VPNavBarMenuLink .text')
+  const navKeys = ['home', 'blog', 'projects', 'editor', 'about']
+  navLinks.forEach((el, i) => { if (navKeys[i]) el.textContent = t(`nav.${navKeys[i]}`) })
+}
+
 function patchAll() {
-  nextTick(() => { patchHomeContent(); patchProjectContent(); patchDocUI() })
+  nextTick(() => { patchHomeContent(); patchProjectContent(); patchDocUI(); patchNavBar() })
 }
 
 onMounted(patchAll)

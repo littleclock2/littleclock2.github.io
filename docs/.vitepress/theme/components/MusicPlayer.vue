@@ -1,17 +1,17 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
 
+const { T } = useI18n()
 const STORAGE_KEY = 'terminus_music'
 const MUSIC_SRC = '/bgm.mp3'
 
 const isPlaying = ref(false)
-const isVisible = ref(true)
 const audio = ref(null)
 const progress = ref(0)
 const duration = ref(0)
 const volume = ref(0.3)
 const showVolume = ref(false)
-const isLoaded = ref(false)
 const hasError = ref(false)
 
 const progressPercent = computed(() => {
@@ -26,7 +26,6 @@ function initAudio() {
   audio.value.preload = 'metadata'
 
   audio.value.addEventListener('loadedmetadata', () => {
-    isLoaded.value = true
     duration.value = audio.value.duration
   })
 
@@ -66,7 +65,6 @@ function setVolume(e) {
 
 onMounted(() => {
   initAudio()
-  // Auto-play if previously playing
   if (localStorage.getItem(STORAGE_KEY) === '1') {
     setTimeout(() => {
       audio.value?.play().then(() => {
@@ -116,22 +114,25 @@ onUnmounted(() => {
         <span class="ef-music-bar"></span>
       </div>
       <!-- Play icon (paused) -->
-      <svg v-else class="ef-music-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path d="M4 2.5v11l9-5.5L4 2.5z" fill="currentColor"/>
+      <svg v-else class="ef-music-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M5 3v12l10-6L5 3z" fill="currentColor"/>
       </svg>
     </button>
 
-    <!-- Progress ring (subtle) -->
-    <svg class="ef-music-ring" width="44" height="44" viewBox="0 0 44 44">
-      <circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,241,0,0.06)" stroke-width="1"/>
+    <!-- Label -->
+    <span class="ef-music-label" v-if="!hasError">BGM</span>
+
+    <!-- Progress ring -->
+    <svg class="ef-music-ring" width="52" height="52" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="24" fill="none" stroke="rgba(255,241,0,0.06)" stroke-width="1.5"/>
       <circle
-        cx="22" cy="22" r="20"
+        cx="26" cy="26" r="24"
         fill="none"
-        stroke="rgba(255,241,0,0.25)"
-        stroke-width="1.5"
-        :stroke-dasharray="125.6"
-        :stroke-dashoffset="125.6 - (125.6 * progressPercent / 100)"
-        transform="rotate(-90 22 22)"
+        stroke="rgba(255,241,0,0.3)"
+        stroke-width="2"
+        :stroke-dasharray="150.8"
+        :stroke-dashoffset="150.8 - (150.8 * progressPercent / 100)"
+        transform="rotate(-90 26 26)"
         stroke-linecap="round"
         style="transition: stroke-dashoffset 0.3s linear"
       />
@@ -142,18 +143,18 @@ onUnmounted(() => {
 <style scoped>
 .ef-music {
   position: fixed;
-  bottom: 28px;
-  right: 28px;
+  bottom: 32px;
+  right: 32px;
   z-index: 100;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .ef-music-ring {
   position: absolute;
   top: 50%;
-  left: 50%;
+  left: 26px;
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
@@ -161,34 +162,36 @@ onUnmounted(() => {
 .ef-music-btn {
   position: relative;
   z-index: 2;
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255,241,0,0.2);
-  background: rgba(10,10,10,0.85);
-  backdrop-filter: blur(12px);
-  color: rgba(255,241,0,0.5);
+  border: 2px solid rgba(255,241,0,0.35);
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(16px);
+  color: rgba(255,241,0,0.6);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
-  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 24px rgba(0,0,0,0.5), inset 0 0 12px rgba(255,241,0,0.03);
 }
 
 .ef-music-btn:hover {
-  border-color: rgba(255,241,0,0.4);
+  border-color: rgba(255,241,0,0.6);
   color: var(--ef-yellow);
-  box-shadow: 0 0 30px rgba(255,241,0,0.1);
+  box-shadow: 0 0 32px rgba(255,241,0,0.15), inset 0 0 16px rgba(255,241,0,0.06);
+  transform: scale(1.05);
 }
 
 .ef-music-btn--active {
-  border-color: rgba(255,241,0,0.35);
+  border-color: rgba(255,241,0,0.5);
   color: var(--ef-yellow);
+  box-shadow: 0 0 28px rgba(255,241,0,0.12), inset 0 0 14px rgba(255,241,0,0.05);
 }
 
 .ef-music-btn--error {
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: not-allowed;
 }
 
@@ -196,29 +199,43 @@ onUnmounted(() => {
   margin-left: 2px;
 }
 
+.ef-music-label {
+  position: relative;
+  z-index: 2;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,241,0,0.45);
+  pointer-events: none;
+}
+
+.ef-music-btn--active ~ .ef-music-label {
+  color: rgba(255,241,0,0.65);
+}
+
 /* Sound wave bars */
 .ef-music-bars {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 16px;
+  gap: 2.5px;
+  height: 20px;
 }
 
 .ef-music-bar {
-  width: 2.5px;
+  width: 3px;
   background: var(--ef-yellow);
-  border-radius: 1px;
+  border-radius: 1.5px;
   animation: ef-music-wave 1.2s ease-in-out infinite;
 }
 
-.ef-music-bar:nth-child(1) { height: 40%; animation-delay: 0s; }
-.ef-music-bar:nth-child(2) { height: 70%; animation-delay: 0.15s; }
+.ef-music-bar:nth-child(1) { height: 35%; animation-delay: 0s; }
+.ef-music-bar:nth-child(2) { height: 65%; animation-delay: 0.15s; }
 .ef-music-bar:nth-child(3) { height: 100%; animation-delay: 0.3s; }
-.ef-music-bar:nth-child(4) { height: 60%; animation-delay: 0.45s; }
-.ef-music-bar:nth-child(5) { height: 30%; animation-delay: 0.6s; }
+.ef-music-bar:nth-child(4) { height: 55%; animation-delay: 0.45s; }
+.ef-music-bar:nth-child(5) { height: 25%; animation-delay: 0.6s; }
 
 @keyframes ef-music-wave {
-  0%, 100% { transform: scaleY(0.4); }
+  0%, 100% { transform: scaleY(0.35); }
   50% { transform: scaleY(1); }
 }
 
@@ -229,19 +246,20 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 6px;
-  background: rgba(10,10,10,0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,241,0,0.1);
+  gap: 6px;
+  padding: 8px;
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(255,241,0,0.15);
 }
 
 .ef-music-vol-track {
-  width: 4px;
-  height: 48px;
+  width: 5px;
+  height: 56px;
   background: rgba(255,241,0,0.08);
   position: relative;
   cursor: pointer;
+  border-radius: 2px;
 }
 
 .ef-music-vol-fill {
@@ -251,13 +269,14 @@ onUnmounted(() => {
   width: 100%;
   background: var(--ef-yellow);
   transition: height 0.1s ease;
+  border-radius: 2px;
 }
 
 .ef-music-vol-label {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 1px;
-  color: rgba(255,241,0,0.4);
+  color: rgba(255,241,0,0.5);
   text-align: center;
 }
 
@@ -272,6 +291,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .ef-music { bottom: 16px; right: 16px; }
-  .ef-music-btn { width: 38px; height: 38px; }
+  .ef-music-btn { width: 44px; height: 44px; }
+  .ef-music-label { font-size: 9px; }
 }
 </style>

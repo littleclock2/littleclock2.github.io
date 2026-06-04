@@ -1,4 +1,7 @@
 <script setup>
+import { useI18n } from '../composables/useI18n.js'
+const { T } = useI18n()
+
 defineProps({
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -21,7 +24,7 @@ defineProps({
         <span v-for="tag in tags" :key="tag" class="ef-tag">{{ tag }}</span>
       </div>
       <a v-if="repoUrl" :href="repoUrl" target="_blank" rel="noopener" class="ef-project-link">
-        <span>REPO</span>
+        <span>{{ T.projects.repo }}</span>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path d="M3 9L9 3M9 3H4M9 3V8" stroke="currentColor" stroke-width="1"/>
         </svg>
