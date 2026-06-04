@@ -15,6 +15,8 @@ const hasError = ref(false)
 const songName = ref('')
 const showTooltip = ref(false)
 const isDragging = ref(false)
+const progressRef = ref(null)
+const volRef = ref(null)
 
 const progressPercent = computed(() => {
   if (!duration.value) return 0
@@ -113,15 +115,16 @@ function stopDrag() {
 }
 
 function updateProgress(e) {
-  if (!audio.value || !duration.value) return
-  const rect = e.currentTarget.getBoundingClientRect()
+  if (!audio.value || !duration.value || !progressRef.value) return
+  const rect = progressRef.value.getBoundingClientRect()
   const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
   audio.value.currentTime = x * duration.value
   progress.value = audio.value.currentTime
 }
 
 function setVolume(e) {
-  const rect = e.currentTarget.getBoundingClientRect()
+  if (!volRef.value) return
+  const rect = volRef.value.getBoundingClientRect()
   const y = e.clientY - rect.top
   const pct = 1 - Math.max(0, Math.min(1, y / rect.height))
   volume.value = Math.round(pct * 100) / 100
@@ -171,7 +174,7 @@ onUnmounted(() => {
     </Transition>
 
     <!-- Progress bar (below tooltip, above button) -->
-    <div v-if="songName && !hasError" class="ef-music-progress" @mousedown="startDrag">
+    <div v-if="songName && !hasError" ref="progressRef" class="ef-music-progress" @mousedown="startDrag">
       <div class="ef-music-progress-bg">
         <div class="ef-music-progress-fill" :style="{ width: progressPercent + '%' }"></div>
         <div class="ef-music-progress-handle" :style="{ left: progressPercent + '%' }"></div>
@@ -183,7 +186,7 @@ onUnmounted(() => {
       <!-- Volume slider (left side) -->
       <Transition name="ef-music-vol">
         <div v-if="showVolume" class="ef-music-volume">
-          <div class="ef-music-vol-track" @click="setVolume">
+          <div ref="volRef" class="ef-music-vol-track" @click="setVolume">
             <div class="ef-music-vol-fill" :style="{ height: (volume * 100) + '%' }"></div>
           </div>
           <span class="ef-music-vol-label">{{ Math.round(volume * 100) }}</span>
