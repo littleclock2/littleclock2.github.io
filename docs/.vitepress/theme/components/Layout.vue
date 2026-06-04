@@ -65,7 +65,7 @@ function patchDocUI() {
 
 function patchNavBar() {
   if (typeof document === 'undefined') return
-  const navLinks = document.querySelectorAll('.VPNavBarMenuLink .text')
+  const navLinks = document.querySelectorAll('.VPNavBarMenuLink > span')
   const navKeys = ['home', 'blog', 'projects', 'editor', 'about']
   navLinks.forEach((el, i) => { if (navKeys[i]) el.textContent = t(`nav.${navKeys[i]}`) })
 }
