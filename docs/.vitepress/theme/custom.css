@@ -168,10 +168,16 @@ body {
 
 .VPHero .tagline {
   font-size: 16px !important;
-  color: rgba(255,255,255,0.4) !important;
+  color: rgba(255,255,255,0.5) !important;
   font-weight: 300;
   margin-top: 16px;
-  letter-spacing: 2px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 40px rgba(255,241,0,0.15), 0 0 80px rgba(255,241,0,0.05);
+  animation: t-tagline-glow 5s ease-in-out infinite alternate;
+}
+@keyframes t-tagline-glow {
+  from { text-shadow: 0 0 40px rgba(255,241,0,0.12), 0 0 80px rgba(255,241,0,0.03); }
+  to   { text-shadow: 0 0 60px rgba(255,241,0,0.25), 0 0 120px rgba(255,241,0,0.08); }
 }
 
 .VPHero .actions {
@@ -1052,7 +1058,14 @@ html:not(.dark) .VPHero .text {
   color: rgba(0,0,0,0.35) !important;
 }
 html:not(.dark) .VPHero .tagline {
-  color: rgba(0,0,0,0.4) !important;
+  color: rgba(0,0,0,0.45) !important;
+  letter-spacing: 6px;
+  text-shadow: 0 0 30px rgba(200,160,0,0.1);
+  animation: t-tagline-glow-light 5s ease-in-out infinite alternate;
+}
+@keyframes t-tagline-glow-light {
+  from { text-shadow: 0 0 20px rgba(200,160,0,0.06); }
+  to   { text-shadow: 0 0 40px rgba(200,160,0,0.15); }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1162,3 +1175,43 @@ html:not(.dark) .t-hero-mesh {
 html:not(.dark) .t-tx-num { color: rgba(140,130,0,0.12); }
 
 html:not(.dark) .t-section-bar { background: #bcb30a; }
+
+/* ═══════════════════════════════════════════════════════════
+   亮色模式 — Music Player
+   ═══════════════════════════════════════════════════════════ */
+
+html:not(.dark) .ef-music-btn {
+  border-color: rgba(160,140,0,0.3);
+  background: rgba(248,248,248,0.92);
+  color: rgba(160,140,0,0.6);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+}
+html:not(.dark) .ef-music-btn:hover {
+  border-color: rgba(160,140,0,0.5);
+  color: #a08c00;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+}
+html:not(.dark) .ef-music-btn--active {
+  border-color: rgba(160,140,0,0.45);
+  color: #a08c00;
+  box-shadow: 0 2px 20px rgba(160,140,0,0.1);
+}
+html:not(.dark) .ef-music-tooltip {
+  background: rgba(248,248,248,0.95);
+  border-color: rgba(160,140,0,0.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+html:not(.dark) .ef-music-tip-title { color: #333; }
+html:not(.dark) .ef-music-tip-time { color: rgba(160,140,0,0.6); }
+html:not(.dark) .ef-music-label { color: rgba(160,140,0,0.5); }
+html:not(.dark) .ef-music-progress-bg { background: rgba(160,140,0,0.12); }
+html:not(.dark) .ef-music-progress-fill { background: #bcb30a; }
+html:not(.dark) .ef-music-progress-handle { background: #bcb30a; }
+html:not(.dark) .ef-music-bar { background: #bcb30a; }
+html:not(.dark) .ef-music-volume {
+  background: rgba(248,248,248,0.95);
+  border-color: rgba(160,140,0,0.15);
+}
+html:not(.dark) .ef-music-vol-track { background: rgba(160,140,0,0.1); }
+html:not(.dark) .ef-music-vol-fill { background: #bcb30a; }
+html:not(.dark) .ef-music-vol-label { color: rgba(160,140,0,0.6); }

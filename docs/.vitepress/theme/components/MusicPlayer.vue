@@ -239,13 +239,19 @@ onUnmounted(() => {
 <style scoped>
 .ef-music {
   position: fixed;
-  bottom: 32px;
-  right: 32px;
-  z-index: 100;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 6px;
+  gap: 4px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.ef-music:hover {
+  opacity: 1;
 }
 
 .ef-music-row {
