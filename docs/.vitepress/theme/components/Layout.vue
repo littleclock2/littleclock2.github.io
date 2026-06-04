@@ -1,12 +1,15 @@
 <script setup>
-import { useData } from 'vitepress'
-import { ref, onMounted } from 'vue'
+import { useData, useRoute } from 'vitepress'
+import { ref, onMounted, watch, nextTick } from 'vue'
 import DefaultTheme from 'vitepress/theme'
 import HeroSection from './HeroSection.vue'
 import ClickEffects from './ClickEffects.vue'
+import { useI18n } from '../composables/useI18n.js'
 
 const { frontmatter } = useData()
+const route = useRoute()
 const { Layout: DefaultLayout } = DefaultTheme
+const { locale, t, T } = useI18n()
 
 const stats = ref([
   { label: 'PROJECTS', value: '6+', icon: '◆' },
@@ -23,12 +26,59 @@ onMounted(async () => {
     if (res.ok) blogPosts.value = await res.json()
   } catch {}
 })
+
+function patchHomeContent() {
+  if (typeof document === 'undefined') return
+  const tagline = document.querySelector('.VPHero .tagline')
+  if (tagline) tagline.textContent = t('home.hero.tagline')
+  const buttons = document.querySelectorAll('.VPHero .actions .action')
+  if (buttons[0]) { const btn = buttons[0].querySelector('.VPButton'); if (btn) btn.textContent = t('home.hero.blogBtn') }
+  if (buttons[1]) { const btn = buttons[1].querySelector('.VPButton'); if (btn) btn.textContent = t('home.hero.projectBtn') }
+  const titles = document.querySelectorAll('.VPFeature .title')
+  const details = document.querySelectorAll('.VPFeature .details')
+  const keys = ['stm32', 'mspm0', 'android', 'hardware']
+  titles.forEach((el, i) => { if (keys[i]) el.textContent = t(`home.features.${keys[i]}.title`) })
+  details.forEach((el, i) => { if (keys[i]) el.textContent = t(`home.features.${keys[i]}.details`) })
+}
+
+function patchProjectContent() {
+  if (typeof document === 'undefined') return
+  const cards = document.querySelectorAll('.ef-project')
+  const keys = ['stm32Examples', 'stm32Projects', 'mspm0Examples', 'mspm0Projects', 'androidApps', 'superOtto']
+  cards.forEach((card, i) => {
+    if (!keys[i]) return
+    const desc = card.querySelector('.ef-project-desc')
+    if (desc) desc.textContent = t(`projects.${keys[i]}.desc`)
+  })
+}
+
+function patchDocUI() {
+  if (typeof document === 'undefined') return
+  const outlineLabel = document.querySelector('.VPDoc .outline-title')
+  if (outlineLabel) outlineLabel.textContent = t('doc.outlineLabel')
+  const lastUpdated = document.querySelector('.VPLastUpdated span')
+  if (lastUpdated) lastUpdated.textContent = t('doc.lastUpdated')
+  const pagers = document.querySelectorAll('.VPDocFooter .pager')
+  if (pagers[0]) { const title = pagers[0].querySelector('.title'); if (title) title.textContent = t('doc.prev') }
+  if (pagers[1]) { const title = pagers[1].querySelector('.title'); if (title) title.textContent = t('doc.next') }
+}
+
+function patchAll() {
+  nextTick(() => { patchHomeContent(); patchProjectContent(); patchDocUI() })
+}
+
+onMounted(patchAll)
+watch(locale, patchAll)
+watch(() => route.path, patchAll)
 </script>
 
 <template>
   <DefaultLayout>
     <template #home-hero-before>
       <HeroSection />
+    </template>
+    <template #nav-bar-content-after>
+      <LanguageSwitcher />
     </template>
     <template #home-features-after>
       <div v-if="frontmatter.layout === 'home'" class="t-home-sections">
@@ -54,7 +104,7 @@ onMounted(async () => {
         <section class="t-section">
           <div class="t-section-header">
             <span class="t-section-bar"></span>
-            <span class="t-section-label">LATEST TRANSMISSIONS</span>
+            <span class="t-section-label">{{ T.home.transmissions.latest }}</span>
             <span class="t-section-line"></span>
           </div>
           <div class="t-section-body">
@@ -70,7 +120,7 @@ onMounted(async () => {
               </a>
             </div>
             <a href="/blog/" class="t-section-link">
-              <span>VIEW ALL TRANSMISSIONS</span>
+              <span>{{ T.home.transmissions.viewAll }}</span>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 7h8M8 3l3 4-3 4" stroke="currentColor" stroke-width="1.2"/>
               </svg>
@@ -89,7 +139,7 @@ onMounted(async () => {
         <section class="t-section">
           <div class="t-section-header">
             <span class="t-section-bar"></span>
-            <span class="t-section-label">ACTIVE MISSIONS</span>
+            <span class="t-section-label">{{ T.home.activeMissions }}</span>
             <span class="t-section-line"></span>
           </div>
           <div class="t-section-body">
@@ -101,7 +151,7 @@ onMounted(async () => {
                     <span class="t-mission-led t-led--active"></span>
                     <span class="t-mission-name">STM32-Examples</span>
                   </div>
-                  <p class="t-mission-desc">STM32 基础外设示例集，包含频率测量等基础功能演示</p>
+                  <p class="t-mission-desc">{{ T.home.missions.stm32Examples.desc }}</p>
                   <div class="t-mission-tags">
                     <span class="t-mtag">STM32</span>
                     <span class="t-mtag">Embedded</span>
@@ -116,7 +166,7 @@ onMounted(async () => {
                     <span class="t-mission-led t-led--active"></span>
                     <span class="t-mission-name">MSPM0-Projects</span>
                   </div>
-                  <p class="t-mission-desc">LC 表、信号发生器、万用表、功率分析仪等实用项目</p>
+                  <p class="t-mission-desc">{{ T.home.missions.mspm0Projects.desc }}</p>
                   <div class="t-mission-tags">
                     <span class="t-mtag">MSPM0</span>
                     <span class="t-mtag">Instruments</span>
@@ -131,7 +181,7 @@ onMounted(async () => {
                     <span class="t-mission-led t-led--active"></span>
                     <span class="t-mission-name">Android-Apps</span>
                   </div>
-                  <p class="t-mission-desc">蓝牙通信工具、信号仿真器等 MCU 配套 Android 应用</p>
+                  <p class="t-mission-desc">{{ T.home.missions.androidApps.desc }}</p>
                   <div class="t-mission-tags">
                     <span class="t-mtag">Android</span>
                     <span class="t-mtag">Bluetooth</span>
@@ -141,7 +191,7 @@ onMounted(async () => {
               </a>
             </div>
             <a href="/projects/" class="t-section-link">
-              <span>VIEW ALL MISSIONS</span>
+              <span>{{ T.home.viewAllMissions }}</span>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M3 7h8M8 3l3 4-3 4" stroke="currentColor" stroke-width="1.2"/>
               </svg>
@@ -152,6 +202,7 @@ onMounted(async () => {
     </template>
   </DefaultLayout>
   <ClickEffects />
+  <MusicPlayer />
 </template>
 
 <style scoped>

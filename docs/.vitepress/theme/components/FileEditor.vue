@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, nextTick } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
 
 // 密码保护 — 使用 hash 校验，密码不以明文存储在源码中
 const isAuthed = ref(false)
@@ -7,6 +8,7 @@ const passwordInput = ref('')
 const passwordError = ref('')
 const STORAGE_KEY = 'ef_editor_auth'
 const showHelp = ref(false)
+const { t, T } = useI18n()
 
 async function hashPassword(str) {
   const buf = new TextEncoder().encode(str)
@@ -22,7 +24,7 @@ async function checkPassword() {
     passwordError.value = ''
     localStorage.setItem(STORAGE_KEY, '1')
   } else {
-    passwordError.value = 'ACCESS DENIED'
+    passwordError.value = T.value.editor.lock.error
     passwordInput.value = ''
   }
 }
@@ -292,17 +294,17 @@ function handleImageDrop(e) {
           <circle cx="16" cy="22" r="2" fill="currentColor"/>
         </svg>
       </div>
-      <p class="ef-lock-title">RESTRICTED ACCESS</p>
-      <p class="ef-lock-sub">此页面仅限授权人员访问</p>
+      <p class="ef-lock-title">{{ T.editor.lock.title }}</p>
+      <p class="ef-lock-sub">{{ T.editor.lock.subtitle }}</p>
       <div class="ef-lock-input-row">
         <input
           v-model="passwordInput"
           type="password"
           class="ef-lock-input"
-          placeholder="输入访问密码"
+          :placeholder="T.editor.lock.placeholder"
           @keyup.enter="checkPassword"
         />
-        <button class="ef-lock-btn" @click="checkPassword">ENTER</button>
+        <button class="ef-lock-btn" @click="checkPassword">{{ T.editor.lock.enter }}</button>
       </div>
       <p v-if="passwordError" class="ef-lock-error">{{ passwordError }}</p>
     </div>
@@ -319,7 +321,7 @@ function handleImageDrop(e) {
             <path d="M4 5h6M4 7h4M4 9h5" stroke="currentColor" stroke-width="0.8"/>
           </svg>
         </span>
-        <span class="ef-editor-label">TERMINAL</span>
+        <span class="ef-editor-label">{{ T.editor.btn.terminal }}</span>
         <input v-if="fileLoaded" v-model="fileName" class="ef-editor-filename-input" spellcheck="false" />
       </div>
       <div class="ef-editor-stats">
@@ -333,29 +335,29 @@ function handleImageDrop(e) {
     <div class="ef-editor-toolbar">
       <div class="ef-toolbar-row">
         <div class="ef-editor-tabs">
-          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'edit' }]" @click="switchTab('edit')">EDIT</button>
-          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'preview' }]" @click="switchTab('preview')">PREVIEW</button>
+          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'edit' }]" @click="switchTab('edit')">{{ T.editor.btn.edit }}</button>
+          <button :class="['ef-tab', { 'ef-tab--active': activeTab === 'preview' }]" @click="switchTab('preview')">{{ T.editor.btn.preview }}</button>
         </div>
       </div>
       <div class="ef-toolbar-row">
         <div class="ef-editor-actions">
-          <button class="ef-btn" @click="newFile">+ NEW</button>
-          <button class="ef-btn ef-btn--blog" @click="newBlog">+ BLOG</button>
+          <button class="ef-btn" @click="newFile">{{ T.editor.btn.new }}</button>
+          <button class="ef-btn ef-btn--blog" @click="newBlog">{{ T.editor.btn.blog }}</button>
           <label class="ef-btn">
-            UPLOAD
+            {{ T.editor.btn.upload }}
             <input type="file" accept=".md,.txt,.c,.h,.py,.js,.css,.html,.json" @change="handleFileSelect" hidden />
           </label>
           <span class="ef-toolbar-sep"></span>
-          <button class="ef-btn" @click="downloadFile" :disabled="!fileLoaded">EXPORT</button>
+          <button class="ef-btn" @click="downloadFile" :disabled="!fileLoaded">{{ T.editor.btn.export }}</button>
           <button v-if="fileLoaded" class="ef-btn" @click="generateSnippet">
-            {{ snippetCopied ? '✓ COPIED' : 'COPY ENTRY' }}
+            {{ snippetCopied ? T.editor.btn.copied : T.editor.btn.copyEntry }}
           </button>
-          <button v-if="fileLoaded && fileName.endsWith('.md')" class="ef-btn ef-btn--blog" @click="downloadBlogList">↓ LIST</button>
+          <button v-if="fileLoaded && fileName.endsWith('.md')" class="ef-btn ef-btn--blog" @click="downloadBlogList">{{ T.editor.btn.list }}</button>
         </div>
         <div class="ef-editor-actions">
-          <button class="ef-btn ef-btn--help" @click="showHelp = true">? HELP</button>
-          <button v-if="fileLoaded" class="ef-btn ef-btn--danger" @click="clearEditor">CLEAR</button>
-          <button class="ef-btn ef-btn--lock" @click="lockEditor">🔒 LOCK</button>
+          <button class="ef-btn ef-btn--help" @click="showHelp = true">{{ T.editor.btn.help }}</button>
+          <button v-if="fileLoaded" class="ef-btn ef-btn--danger" @click="clearEditor">{{ T.editor.btn.clear }}</button>
+          <button class="ef-btn ef-btn--lock" @click="lockEditor">{{ T.editor.btn.lock }}</button>
         </div>
       </div>
     </div>
@@ -372,10 +374,10 @@ function handleImageDrop(e) {
           <rect x="6" y="6" width="28" height="28" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/>
           <path d="M20 14v12M14 20h12" stroke="currentColor" stroke-width="1.2"/>
         </svg>
-        <p class="ef-dropzone-text">DROP FILE HERE</p>
+        <p class="ef-dropzone-text">{{ T.editor.btn.dropFile }}</p>
         <p class="ef-dropzone-hint">.md .txt .c .h .py .js .css .json</p>
         <label class="ef-dropzone-btn">
-          BROWSE
+          {{ T.editor.btn.browse }}
           <input type="file" accept=".md,.txt,.c,.h,.py,.js,.css,.html,.json" @change="handleFileSelect" hidden />
         </label>
       </div>
@@ -390,8 +392,8 @@ function handleImageDrop(e) {
 
     <!-- 状态栏 -->
     <div class="ef-statusbar">
-      <span class="ef-status-item"><span class="ef-dot"></span> {{ fileLoaded ? 'LOADED' : 'READY' }}</span>
-      <span class="ef-status-item" v-if="fileName">FILE: {{ fileName }}</span>
+      <span class="ef-status-item"><span class="ef-dot"></span> {{ fileLoaded ? T.editor.btn.loaded : T.editor.btn.ready }}</span>
+      <span class="ef-status-item" v-if="fileName">{{ T.editor.btn.file }} {{ fileName }}</span>
       <span class="ef-status-right">UTF-8 | MARKDOWN</span>
     </div>
   </div>
@@ -400,73 +402,73 @@ function handleImageDrop(e) {
   <Teleport to="body">
     <div v-if="showHelp" class="ef-help-overlay" @click.self="showHelp = false">
       <div class="ef-help-box">
-        <p class="ef-help-title">EDITOR GUIDE</p>
+        <p class="ef-help-title">{{ T.editor.help.title }}</p>
         <div class="ef-help-content">
           <div class="ef-help-section">
-            <p class="ef-help-section-title">通用文件编辑</p>
+            <p class="ef-help-section-title">{{ T.editor.help.fileEditingTitle }}</p>
             <div class="ef-help-step">
               <span class="ef-help-num">01</span>
               <div>
-                <p class="ef-help-step-title">创建或上传文件</p>
-                <p class="ef-help-step-desc">点击 + NEW 新建，或拖拽/UPLOAD 上传已有文件</p>
+                <p class="ef-help-step-title">{{ T.editor.help.step1Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.step1Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">02</span>
               <div>
-                <p class="ef-help-step-title">编辑内容</p>
-                <p class="ef-help-step-desc">在 EDIT 标签页编写，PREVIEW 标签页预览效果</p>
+                <p class="ef-help-step-title">{{ T.editor.help.step2Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.step2Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">03</span>
               <div>
-                <p class="ef-help-step-title">导出文件</p>
-                <p class="ef-help-step-desc">点击 EXPORT 下载文件，放入对应目录后提交推送</p>
+                <p class="ef-help-step-title">{{ T.editor.help.step3Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.step3Desc }}</p>
               </div>
             </div>
           </div>
           <div class="ef-help-divider"></div>
           <div class="ef-help-section">
-            <p class="ef-help-section-title">写博客</p>
+            <p class="ef-help-section-title">{{ T.editor.help.blogTitle }}</p>
             <div class="ef-help-step">
               <span class="ef-help-num">01</span>
               <div>
-                <p class="ef-help-step-title">创建博客模板</p>
-                <p class="ef-help-step-desc">点击 + BLOG 自动生成带 frontmatter 的模板</p>
+                <p class="ef-help-step-title">{{ T.editor.help.blogStep1Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.blogStep1Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">02</span>
               <div>
-                <p class="ef-help-step-title">编写文章</p>
-                <p class="ef-help-step-desc">修改文件名、编辑 frontmatter 和正文内容</p>
+                <p class="ef-help-step-title">{{ T.editor.help.blogStep2Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.blogStep2Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">03</span>
               <div>
-                <p class="ef-help-step-title">导出文件</p>
-                <p class="ef-help-step-desc">EXPORT 下载 .md → 放入 docs/blog/</p>
+                <p class="ef-help-step-title">{{ T.editor.help.blogStep3Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.blogStep3Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">04</span>
               <div>
-                <p class="ef-help-step-title">更新博客列表</p>
-                <p class="ef-help-step-desc">↓ LIST 下载 blog-list.json → 替换 docs/public/blog-list.json</p>
+                <p class="ef-help-step-title">{{ T.editor.help.blogStep4Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.blogStep4Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">05</span>
               <div>
-                <p class="ef-help-step-title">提交推送</p>
-                <p class="ef-help-step-desc">git add + commit + push，GitHub Actions 自动部署</p>
+                <p class="ef-help-step-title">{{ T.editor.help.blogStep5Title }}</p>
+                <p class="ef-help-step-desc">{{ T.editor.help.blogStep5Desc }}</p>
               </div>
             </div>
           </div>
         </div>
-        <button class="ef-help-close" @click="showHelp = false">GOT IT</button>
+        <button class="ef-help-close" @click="showHelp = false">{{ T.editor.help.close }}</button>
       </div>
     </div>
   </Teleport>

@@ -1,5 +1,8 @@
 <script setup>
 import { ref, watch, nextTick, onMounted } from 'vue'
+import { useI18n } from '../composables/useI18n.js'
+
+const { t, T } = useI18n()
 
 const STORAGE_PREFIX = 'ef_about_'
 const sKey = (k) => STORAGE_PREFIX + k
@@ -36,7 +39,7 @@ async function submitPwd() {
     showPwdModal.value = false
     localStorage.setItem(AUTH_KEY, '1')
   } else {
-    pwdError.value = 'ACCESS DENIED'
+    pwdError.value = T.value.about.edit.pwdError
     pwdInput.value = ''
   }
 }
@@ -330,13 +333,13 @@ function exportData() {
   <div class="ef-about">
     <!-- 编辑模式切换 -->
     <div class="ef-about-toolbar">
-      <button class="ef-about-edit-btn ef-about-edit-btn--help" @click="showHelp = true">? HELP</button>
+      <button class="ef-about-edit-btn ef-about-edit-btn--help" @click="showHelp = true">{{ T.about.edit.help }}</button>
       <template v-if="isEditing">
-        <button class="ef-about-edit-btn ef-about-edit-btn--export" @click="exportData">↓ EXPORT</button>
-        <button class="ef-about-edit-btn ef-about-edit-btn--lock" @click="lockEdit">🔒 LOCK</button>
-        <button class="ef-about-edit-btn ef-about-edit-btn--active" @click="isEditing = false">✓ DONE</button>
+        <button class="ef-about-edit-btn ef-about-edit-btn--export" @click="exportData">{{ T.about.edit.export }}</button>
+        <button class="ef-about-edit-btn ef-about-edit-btn--lock" @click="lockEdit">{{ T.about.edit.lock }}</button>
+        <button class="ef-about-edit-btn ef-about-edit-btn--active" @click="isEditing = false">{{ T.about.edit.done }}</button>
       </template>
-      <button v-else class="ef-about-edit-btn" @click="tryEnableEdit">✎ EDIT</button>
+      <button v-else class="ef-about-edit-btn" @click="tryEnableEdit">{{ T.about.edit.editBtn }}</button>
     </div>
 
     <!-- 头像展示区 -->
@@ -352,13 +355,13 @@ function exportData() {
               <path d="M8 44c0-10 7-16 16-16s16 6 16 16" stroke="currentColor" stroke-width="1.5"/>
             </svg>
             <label class="ef-about-avatar-upload">
-              UPLOAD AVATAR
+              {{ T.about.edit.uploadAvatar }}
               <input type="file" accept="image/*" @change="handleAvatarUpload" hidden />
             </label>
           </div>
           <!-- 编辑模式：更换头像 -->
           <label v-if="isEditing && avatarUrl" class="ef-about-avatar-replace">
-            REPLACE
+            {{ T.about.edit.replace }}
             <input type="file" accept="image/*" @change="handleAvatarUpload" hidden />
           </label>
         </div>
@@ -369,7 +372,7 @@ function exportData() {
       </div>
 
       <div class="ef-about-info">
-        <p class="ef-about-code-name">CODE NAME</p>
+        <p class="ef-about-code-name">{{ T.about.profile.codeName }}</p>
         <h1 class="ef-about-name">
           <template v-if="isEditing">
             <input v-model="profile.name" class="ef-inline-input ef-inline-input--name" />
@@ -396,8 +399,8 @@ function exportData() {
     <div class="ef-about-section">
       <h2 class="ef-about-section-title">
         <span class="ef-about-section-bar"></span>
-        SKILL PANEL
-        <button v-if="isEditing" class="ef-section-add" @click="addSkill">+ ADD</button>
+        {{ T.about.skills.panelTitle }}
+        <button v-if="isEditing" class="ef-section-add" @click="addSkill">{{ T.about.skills.add }}</button>
       </h2>
       <div class="ef-about-skills">
         <div class="ef-about-skill" v-for="(s, i) in skills" :key="i">
@@ -418,8 +421,8 @@ function exportData() {
     <div class="ef-about-section">
       <h2 class="ef-about-section-title">
         <span class="ef-about-section-bar"></span>
-        FIELD OF OPERATIONS
-        <button v-if="isEditing" class="ef-section-add" @click="addField">+ ADD</button>
+        {{ T.about.fields.title }}
+        <button v-if="isEditing" class="ef-section-add" @click="addField">{{ T.about.fields.add }}</button>
       </h2>
       <div class="ef-about-fields">
         <div class="ef-about-field" v-for="(f, i) in fields" :key="i">
@@ -443,7 +446,7 @@ function exportData() {
     <div class="ef-about-section">
       <h2 class="ef-about-section-title">
         <span class="ef-about-section-bar"></span>
-        SHOWCASE
+        {{ T.about.showcase.title }}
       </h2>
       <div class="ef-about-showcase" v-if="showcaseImages.length">
         <div class="ef-about-showcase-item" v-for="(img, i) in showcaseImages" :key="i">
@@ -457,7 +460,7 @@ function exportData() {
             <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/>
             <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.2"/>
           </svg>
-          <span>上传立绘 / 图片</span>
+          <span>{{ T.about.showcase.upload }}</span>
           <input type="file" accept="image/*" multiple @change="handleShowcaseUpload" hidden />
         </label>
       </div>
@@ -467,16 +470,16 @@ function exportData() {
     <div class="ef-about-section">
       <h2 class="ef-about-section-title">
         <span class="ef-about-section-bar"></span>
-        COMMUNICATION
+        {{ T.about.communication.title }}
       </h2>
       <div class="ef-about-links">
         <a href="https://github.com/littleclock2" target="_blank" class="ef-about-link">
-          <span class="ef-about-link-label">GITHUB</span>
+          <span class="ef-about-link-label">{{ T.about.edit.github }}</span>
           <span class="ef-about-link-value">littleclock2</span>
           <span class="ef-about-link-arrow">→</span>
         </a>
         <a href="mailto:contact@example.invalid" class="ef-about-link">
-          <span class="ef-about-link-label">EMAIL</span>
+          <span class="ef-about-link-label">{{ T.about.edit.email }}</span>
           <span class="ef-about-link-value">contact@example.invalid</span>
           <span class="ef-about-link-arrow">→</span>
         </a>
@@ -487,11 +490,11 @@ function exportData() {
     <Teleport to="body">
       <div v-if="showPwdModal" class="ef-pwd-overlay" @click.self="showPwdModal = false">
         <div class="ef-pwd-box">
-          <p class="ef-pwd-title">RESTRICTED ACCESS</p>
-          <p class="ef-pwd-sub">请输入编辑密码</p>
+          <p class="ef-pwd-title">{{ T.about.edit.restricted }}</p>
+          <p class="ef-pwd-sub">{{ T.about.edit.pwdSubtitle }}</p>
           <div class="ef-pwd-row">
-            <input v-model="pwdInput" type="password" class="ef-pwd-input" placeholder="密码" @keyup.enter="submitPwd" />
-            <button class="ef-pwd-btn" @click="submitPwd">ENTER</button>
+            <input v-model="pwdInput" type="password" class="ef-pwd-input" :placeholder="T.about.edit.pwdPlaceholder" @keyup.enter="submitPwd" />
+            <button class="ef-pwd-btn" @click="submitPwd">{{ T.about.edit.pwdEnter }}</button>
           </div>
           <p v-if="pwdError" class="ef-pwd-error">{{ pwdError }}</p>
         </div>
@@ -502,7 +505,7 @@ function exportData() {
     <Teleport to="body">
       <div v-if="cropVisible" class="ef-crop-overlay" @mousemove="onCropMouseMove" @mouseup="onCropMouseUp" @mouseleave="onCropMouseUp">
         <div class="ef-crop-modal">
-          <p class="ef-crop-title">CROP IMAGE</p>
+          <p class="ef-crop-title">{{ T.about.edit.cropImage }}</p>
           <div class="ef-crop-viewport">
             <img :src="cropImgSrc" class="ef-crop-img" @load="initCropBox" />
             <!-- 裁剪遮罩 -->
@@ -522,8 +525,8 @@ function exportData() {
             </div>
           </div>
           <div class="ef-crop-actions">
-            <button class="ef-crop-btn ef-crop-cancel" @click="cancelCrop">CANCEL</button>
-            <button class="ef-crop-btn ef-crop-confirm" @click="confirmCrop">CONFIRM</button>
+            <button class="ef-crop-btn ef-crop-cancel" @click="cancelCrop">{{ T.about.edit.cancel }}</button>
+            <button class="ef-crop-btn ef-crop-confirm" @click="confirmCrop">{{ T.about.edit.confirm }}</button>
           </div>
         </div>
       </div>
@@ -533,45 +536,45 @@ function exportData() {
     <Teleport to="body">
       <div v-if="showHelp" class="ef-help-overlay" @click.self="showHelp = false">
         <div class="ef-help-box">
-          <p class="ef-help-title">EDITING GUIDE</p>
+          <p class="ef-help-title">{{ T.about.help.title }}</p>
           <div class="ef-help-content">
             <div class="ef-help-step">
               <span class="ef-help-num">01</span>
               <div>
-                <p class="ef-help-step-title">进入编辑模式</p>
-                <p class="ef-help-step-desc">点击 EDIT → 输入密码 → 进入编辑模式</p>
+                <p class="ef-help-step-title">{{ T.about.help.step1Title }}</p>
+                <p class="ef-help-step-desc">{{ T.about.help.step1Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">02</span>
               <div>
-                <p class="ef-help-step-title">编辑内容</p>
-                <p class="ef-help-step-desc">修改名字、技能、领域等文本，上传头像和立绘</p>
+                <p class="ef-help-step-title">{{ T.about.help.step2Title }}</p>
+                <p class="ef-help-step-desc">{{ T.about.help.step2Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">03</span>
               <div>
-                <p class="ef-help-step-title">完成编辑</p>
-                <p class="ef-help-step-desc">点击 DONE 保存到浏览器本地</p>
+                <p class="ef-help-step-title">{{ T.about.help.step3Title }}</p>
+                <p class="ef-help-step-desc">{{ T.about.help.step3Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">04</span>
               <div>
-                <p class="ef-help-step-title">导出到仓库</p>
-                <p class="ef-help-step-desc">点击 EXPORT 下载 JSON + 图片文件</p>
+                <p class="ef-help-step-title">{{ T.about.help.step4Title }}</p>
+                <p class="ef-help-step-desc">{{ T.about.help.step4Desc }}</p>
               </div>
             </div>
             <div class="ef-help-step">
               <span class="ef-help-num">05</span>
               <div>
-                <p class="ef-help-step-title">提交推送</p>
-                <p class="ef-help-step-desc">将下载的文件放入 docs/public/about/ 目录，git commit & push</p>
+                <p class="ef-help-step-title">{{ T.about.help.step5Title }}</p>
+                <p class="ef-help-step-desc">{{ T.about.help.step5Desc }}</p>
               </div>
             </div>
           </div>
-          <button class="ef-help-close" @click="showHelp = false">GOT IT</button>
+          <button class="ef-help-close" @click="showHelp = false">{{ T.about.help.close }}</button>
         </div>
       </div>
     </Teleport>
@@ -695,7 +698,7 @@ function exportData() {
 .ef-about-skill-name { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #999; letter-spacing: 1px; min-width: 80px; }
 .ef-about-skill-bar { flex: 1; height: 4px; background: #1a1a1a; position: relative; }
 .ef-about-skill-fill { height: 100%; background: var(--ef-yellow); transition: width 0.3s ease; }
-.ef-about-skill-tools { font-size: 11px; color: #555; min-width: 140px; text-align: right; }
+.ef-about-skill-tools { font-size: 13px; color: #777; min-width: 140px; text-align: right; }
 .ef-about-skill-input {
   background: transparent; border: 1px solid #2a2a2a; color: #ccc;
   font-family: 'Share Tech Mono', monospace; font-size: 11px;
