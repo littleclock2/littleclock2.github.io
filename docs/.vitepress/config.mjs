@@ -9,22 +9,25 @@ export default defineConfig({
 
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }],
-    ['meta', { name: 'theme-color', content: '#0a0a0a' }],
+    ['meta', { name: 'theme-color', content: '#0B0C0A' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-    ['link', { href: 'https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@200;300;400;500;600;700;800;900&family=Inter:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Share+Tech+Mono&display=swap', rel: 'stylesheet' }],
+    ['link', { href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=Share+Tech+Mono&family=Source+Sans+3:wght@300;400;500;600;700;800&display=swap', rel: 'stylesheet' }],
   ],
+
+  sitemap: {
+    hostname: 'https://littleclock2.github.io'
+  },
 
   themeConfig: {
     siteTitle: false,
     sidebar: false,
 
     nav: [
-      { text: 'HOME', link: '/' },
-      { text: 'BLOG', link: '/blog/' },
-      { text: 'PROJECTS', link: '/projects/' },
-      { text: 'EDITOR', link: '/editor/' },
-      { text: 'ABOUT', link: '/about' },
+      { text: '首页', link: '/' },
+      { text: '文章', link: '/blog/' },
+      { text: '项目', link: '/projects/' },
+      { text: '关于', link: '/about' },
     ],
 
     socialLinks: [
@@ -32,8 +35,13 @@ export default defineConfig({
     ],
 
     footer: {
-      message: 'TERMINUS · YUNSWORD',
+      message: 'YUNSWORD',
       copyright: `© ${new Date().getFullYear()} YunSword`
+    },
+
+    editLink: {
+      pattern: 'https://github.com/littleclock2/littleclock2.github.io/edit/main/docs/:path',
+      text: '在 GitHub 上编辑'
     },
 
     search: {

@@ -1,859 +1,354 @@
 <script setup>
-import { ref, watch, nextTick, onMounted } from 'vue'
-import { useI18n } from '../composables/useI18n.js'
+import aboutData from '../../../public/about-data.json'
 
-const { t, T } = useI18n()
-
-const STORAGE_PREFIX = 'ef_about_'
-const sKey = (k) => STORAGE_PREFIX + k
-
-// ══ 编辑权限 ════════════════════════════════════════════════
-const isEditing = ref(false)
-const showPwdModal = ref(false)
-const pwdInput = ref('')
-const pwdError = ref('')
-const AUTH_KEY = 'ef_about_edit_auth'
-const showHelp = ref(false)
-
-async function hashStr(s) {
-  const buf = new TextEncoder().encode(s)
-  const hash = await crypto.subtle.digest('SHA-256', buf)
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-async function tryEnableEdit() {
-  // 已认证过直接进入
-  if (false) {
-    isEditing.value = true
-    return
-  }
-  showPwdModal.value = true
-  pwdInput.value = ''
-  pwdError.value = ''
-}
-
-async function submitPwd() {
-  const h = await hashStr(pwdInput.value)
-  if (false) {
-    isEditing.value = true
-    showPwdModal.value = false
-    localStorage.setItem(AUTH_KEY, '1')
-  } else {
-    pwdError.value = T.value.about.edit.pwdError
-    pwdInput.value = ''
-  }
-}
-
-function lockEdit() {
-  isEditing.value = false
-  localStorage.removeItem(AUTH_KEY)
-}
-
-// ══ 从仓库 JSON 加载默认数据 ════════════════════════════════
-async function fetchAboutData() {
-  try {
-    const res = await fetch('/about-data.json')
-    if (!res.ok) return null
-    return await res.json()
-  } catch { return null }
-}
-
-const profile = ref({
-  name: 'YUNSWORD',
-  role: '嵌入式开发工程师 · MCU · 硬件设计',
-  quote: '「在比特与电子之间，寻找无限可能。」'
-})
-
-const skills = ref([
-  { name: 'MCU 开发', pct: 95, tools: 'STM32 · TI MSPM0' },
-  { name: '开发环境', pct: 88, tools: 'Keil · IAR · CCS' },
-  { name: '编程语言', pct: 88, tools: 'C · C++ · Python' },
-  { name: 'PCB 设计', pct: 78, tools: 'Altium Designer · KiCad' },
-  { name: 'Android', pct: 68, tools: 'Kotlin · Java' },
-])
-
-const fields = ref([
-  { icon: '▸', title: '嵌入式系统设计', desc: '从需求分析到固件实现' },
-  { icon: '▸', title: '模拟电路设计', desc: '信号链、电源管理、传感器接口' },
-  { icon: '▸', title: '信号处理', desc: '数字滤波、FFT、调制解调' },
-  { icon: '▸', title: '仪器仪表开发', desc: 'LC 表、万用表、信号发生器' },
-])
-
-const avatarUrl = ref(load('avatar', ''))
-const showcaseImages = ref(load('showcase', []))
-
-function load(key, fallback) {
-  try {
-    const raw = localStorage.getItem(sKey(key))
-    return raw ? JSON.parse(raw) : fallback
-  } catch { return fallback }
-}
-function save(key, val) {
-  try { localStorage.setItem(sKey(key), JSON.stringify(val)) } catch {}
-}
-
-watch(profile, (v) => save('profile', v), { deep: true })
-watch(skills, (v) => save('skills', v), { deep: true })
-watch(fields, (v) => save('fields', v), { deep: true })
-watch(avatarUrl, (v) => save('avatar', v))
-watch(showcaseImages, (v) => save('showcase', v), { deep: true })
-
-// ══ 初始化：localStorage > JSON > 硬编码默认值 ════════════════
-onMounted(async () => {
-  if (!localStorage.getItem(sKey('profile'))) {
-    const data = await fetchAboutData()
-    if (data) {
-      if (data.profile) profile.value = data.profile
-      if (data.skills) skills.value = data.skills
-      if (data.fields) fields.value = data.fields
-      if (data.avatarUrl) avatarUrl.value = data.avatarUrl
-      if (data.showcaseImages) showcaseImages.value = data.showcaseImages
-    }
-  }
-})
-
-// ══ 裁剪 ════════════════════════════════════════════════
-const cropVisible = ref(false)
-const cropImgSrc = ref('')
-const cropAspect = ref(1) // 1=square, 0.75=3:4
-const cropCallback = ref(null)
-
-// 裁剪框状态
-const cropBox = ref({ x: 0, y: 0, w: 0, h: 0 })
-const imgNatural = ref({ w: 0, h: 0 })
-const imgDisplay = ref({ w: 0, h: 0, offsetX: 0, offsetY: 0 })
-const dragging = ref(false)
-const dragType = ref('') // 'move' | 'nw' | 'ne' | 'sw' | 'se'
-const dragStart = ref({ x: 0, y: 0 })
-const boxStart = ref({ x: 0, y: 0, w: 0, h: 0 })
-
-function openCrop(file, aspect, cb) {
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    cropImgSrc.value = e.target.result
-    cropAspect.value = aspect
-    cropCallback.value = cb
-    cropVisible.value = true
-    nextTick(() => initCropBox())
-  }
-  reader.readAsDataURL(file)
-}
-
-function initCropBox() {
-  const img = document.querySelector('.ef-crop-img')
-  if (!img) return
-  const rect = img.getBoundingClientRect()
-  imgDisplay.value = { w: rect.width, h: rect.height, offsetX: rect.left, offsetY: rect.top }
-  imgNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
-
-  // 初始裁剪框：居中，最大尺寸
-  const maxW = rect.width * 0.8
-  const maxH = rect.height * 0.8
-  let w, h
-  if (cropAspect.value >= 1) {
-    w = Math.min(maxW, maxH * cropAspect.value)
-    h = w / cropAspect.value
-  } else {
-    h = Math.min(maxH, maxW / cropAspect.value)
-    w = h * cropAspect.value
-  }
-  cropBox.value = {
-    x: (rect.width - w) / 2,
-    y: (rect.height - h) / 2,
-    w, h
-  }
-}
-
-function onCropMouseDown(e, type) {
-  e.preventDefault()
-  e.stopPropagation()
-  dragging.value = true
-  dragType.value = type
-  dragStart.value = { x: e.clientX, y: e.clientY }
-  boxStart.value = { ...cropBox.value }
-}
-
-function onCropMouseMove(e) {
-  if (!dragging.value) return
-  const dx = e.clientX - dragStart.value.x
-  const dy = e.clientY - dragStart.value.y
-  const b = { ...boxStart.value }
-  const imgW = imgDisplay.value.w
-  const imgH = imgDisplay.value.h
-  const aspect = cropAspect.value
-
-  if (dragType.value === 'move') {
-    b.x = Math.max(0, Math.min(imgW - b.w, b.x + dx))
-    b.y = Math.max(0, Math.min(imgH - b.h, b.y + dy))
-  } else {
-    // 角落拖拽：保持比例
-    let newW = b.w, newH = b.h
-    if (dragType.value === 'se') {
-      newW = Math.max(40, Math.min(imgW - b.x, b.w + dx))
-      newH = newW / aspect
-    } else if (dragType.value === 'sw') {
-      newW = Math.max(40, b.w - dx)
-      newH = newW / aspect
-      b.x = b.x + (b.w - newW)
-    } else if (dragType.value === 'ne') {
-      newW = Math.max(40, Math.min(imgW - b.x, b.w + dx))
-      newH = newW / aspect
-      b.y = b.y + (b.h - newH)
-    } else if (dragType.value === 'nw') {
-      newW = Math.max(40, b.w - dx)
-      newH = newW / aspect
-      b.x = b.x + (b.w - newW)
-      b.y = b.y + (b.h - newH)
-    }
-    // 边界检查
-    if (b.x + newW > imgW) { newW = imgW - b.x; newH = newW / aspect }
-    if (b.y + newH > imgH) { newH = imgH - b.y; newW = newH * aspect }
-    if (b.x < 0) { newW += b.x; newH = newW / aspect; b.x = 0 }
-    if (b.y < 0) { newH += b.y; newW = newH * aspect; b.y = 0 }
-    b.w = newW; b.h = newH
-  }
-  cropBox.value = b
-}
-
-function onCropMouseUp() {
-  dragging.value = false
-}
-
-function confirmCrop() {
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  const img = document.querySelector('.ef-crop-img')
-  if (!img) return
-
-  const displayW = imgDisplay.value.w
-  const displayH = imgDisplay.value.h
-  const scaleX = img.naturalWidth / displayW
-  const scaleY = img.naturalHeight / displayH
-
-  const sx = cropBox.value.x * scaleX
-  const sy = cropBox.value.y * scaleY
-  const sw = cropBox.value.w * scaleX
-  const sh = cropBox.value.h * scaleY
-
-  canvas.width = sw
-  canvas.height = sh
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh)
-
-  const result = canvas.toDataURL('image/jpeg', 0.7)
-  if (cropCallback.value) cropCallback.value(result)
-  cropVisible.value = false
-}
-
-function cancelCrop() {
-  cropVisible.value = false
-}
-
-// ══ 上传入口 ════════════════════════════════════════════════
-function handleAvatarUpload(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  openCrop(file, 1, (url) => { avatarUrl.value = url })
-}
-
-function handleShowcaseUpload(e) {
-  const files = Array.from(e.target.files)
-  let idx = 0
-  function next() {
-    if (idx >= files.length) return
-    openCrop(files[idx], 3 / 4, (url) => {
-      showcaseImages.value.push({ url, name: files[idx].name })
-      idx++
-      next()
-    })
-  }
-  next()
-}
-
-function removeShowcase(index) {
-  showcaseImages.value.splice(index, 1)
-}
-
-// ══ 技能/领域编辑 ════════════════════════════════════════════════
-function addSkill() {
-  skills.value.push({ name: 'NEW SKILL', pct: 50, tools: '' })
-}
-function removeSkill(i) {
-  skills.value.splice(i, 1)
-}
-function addField() {
-  fields.value.push({ icon: '▸', title: 'NEW FIELD', desc: '' })
-}
-function removeField(i) {
-  fields.value.splice(i, 1)
-}
-
-// ══ 导出 JSON + 图片到仓库 ════════════════════════════════════════════════
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-function base64ToBlob(dataUrl) {
-  return fetch(dataUrl).then(r => r.blob())
-}
-
-function exportData() {
-  // 1. 构建 JSON（图片用 URL 路径）
-  const data = {
-    profile: profile.value,
-    skills: skills.value,
-    fields: fields.value,
-    avatarUrl: avatarUrl.value.startsWith('data:') ? '/about/avatar.jpg' : avatarUrl.value,
-    showcaseImages: showcaseImages.value.map((img, i) => ({
-      url: img.url.startsWith('data:') ? `/about/showcase-${i + 1}.jpg` : img.url,
-      name: img.name
-    }))
-  }
-  downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), 'about-data.json')
-
-  // 2. 下载头像
-  if (avatarUrl.value.startsWith('data:')) {
-    base64ToBlob(avatarUrl.value).then(blob => downloadBlob(blob, 'avatar.jpg'))
-  }
-
-  // 3. 下载立绘图片
-  showcaseImages.value.forEach((img, i) => {
-    if (img.url.startsWith('data:')) {
-      base64ToBlob(img.url).then(blob => downloadBlob(blob, `showcase-${i + 1}.jpg`))
-    }
-  })
-}
+const { profile, skills, fields, projects, links } = aboutData
 </script>
 
 <template>
-  <div class="ef-about">
-    <!-- 编辑模式切换 -->
-    <div class="ef-about-toolbar">
-      <button class="ef-about-edit-btn ef-about-edit-btn--help" @click="showHelp = true">{{ T.about.edit.help }}</button>
-      <template v-if="isEditing">
-        <button class="ef-about-edit-btn ef-about-edit-btn--export" @click="exportData">{{ T.about.edit.export }}</button>
-        <button class="ef-about-edit-btn ef-about-edit-btn--lock" @click="lockEdit">{{ T.about.edit.lock }}</button>
-        <button class="ef-about-edit-btn ef-about-edit-btn--active" @click="isEditing = false">{{ T.about.edit.done }}</button>
-      </template>
-      <button v-else class="ef-about-edit-btn" @click="tryEnableEdit">{{ T.about.edit.editBtn }}</button>
-    </div>
+  <div class="ys-about">
+    <section class="ys-about-intro" aria-labelledby="about-name">
+      <a
+        class="ys-about-avatar"
+        :href="profile.avatarProfileUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        :aria-label="`在 GitHub 查看 ${profile.name}`"
+      >
+        <img
+          :src="profile.avatarUrl"
+          :alt="`${profile.name} 的头像`"
+          width="320"
+          height="320"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
+          referrerpolicy="no-referrer"
+        >
+        <span>GitHub · @littleclock2</span>
+      </a>
 
-    <!-- 头像展示区 -->
-    <div class="ef-about-hero">
-      <div class="ef-about-avatar-wrap">
-        <div class="ef-about-avatar-border">
-          <div class="ef-about-avatar" v-if="avatarUrl">
-            <img :src="avatarUrl" alt="avatar" />
-          </div>
-          <div class="ef-about-avatar ef-about-avatar--empty" v-else>
-            <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="18" r="10" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M8 44c0-10 7-16 16-16s16 6 16 16" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            <label class="ef-about-avatar-upload">
-              {{ T.about.edit.uploadAvatar }}
-              <input type="file" accept="image/*" @change="handleAvatarUpload" hidden />
-            </label>
-          </div>
-          <!-- 编辑模式：更换头像 -->
-          <label v-if="isEditing && avatarUrl" class="ef-about-avatar-replace">
-            {{ T.about.edit.replace }}
-            <input type="file" accept="image/*" @change="handleAvatarUpload" hidden />
-          </label>
+      <div class="ys-about-intro-copy">
+        <p class="ys-eyebrow">PROFILE</p>
+        <h2 id="about-name">{{ profile.name }}</h2>
+        <p class="ys-about-role">{{ profile.role }}</p>
+        <p class="ys-about-summary">{{ profile.summary }}</p>
+        <blockquote>{{ profile.quote }}</blockquote>
+      </div>
+    </section>
+
+    <section class="ys-about-section" aria-labelledby="about-skills">
+      <header>
+        <p class="ys-eyebrow">TOOLKIT</p>
+        <h2 id="about-skills">技术栈</h2>
+      </header>
+      <dl class="ys-skill-list">
+        <div v-for="skill in skills" :key="skill.name" class="ys-skill-row">
+          <dt>{{ skill.name }}</dt>
+          <dd>{{ skill.tools }}</dd>
         </div>
-        <div class="ef-about-corner ef-about-corner--tl"></div>
-        <div class="ef-about-corner ef-about-corner--tr"></div>
-        <div class="ef-about-corner ef-about-corner--bl"></div>
-        <div class="ef-about-corner ef-about-corner--br"></div>
-      </div>
+      </dl>
+    </section>
 
-      <div class="ef-about-info">
-        <p class="ef-about-code-name">{{ T.about.profile.codeName }}</p>
-        <h1 class="ef-about-name">
-          <template v-if="isEditing">
-            <input v-model="profile.name" class="ef-inline-input ef-inline-input--name" />
-          </template>
-          <template v-else>{{ profile.name }}</template>
-        </h1>
-        <p class="ef-about-role">
-          <template v-if="isEditing">
-            <input v-model="profile.role" class="ef-inline-input ef-inline-input--role" />
-          </template>
-          <template v-else>{{ profile.role }}</template>
-        </p>
-        <div class="ef-about-divider"></div>
-        <p class="ef-about-quote">
-          <template v-if="isEditing">
-            <input v-model="profile.quote" class="ef-inline-input ef-inline-input--quote" />
-          </template>
-          <template v-else>{{ profile.quote }}</template>
-        </p>
+    <section class="ys-about-section" aria-labelledby="about-fields">
+      <header>
+        <p class="ys-eyebrow">FOCUS</p>
+        <h2 id="about-fields">关注方向</h2>
+      </header>
+      <div class="ys-focus-grid">
+        <article v-for="field in fields" :key="field.title">
+          <h3>{{ field.title }}</h3>
+          <p>{{ field.desc }}</p>
+        </article>
       </div>
-    </div>
+    </section>
 
-    <!-- 技能面板 -->
-    <div class="ef-about-section">
-      <h2 class="ef-about-section-title">
-        <span class="ef-about-section-bar"></span>
-        {{ T.about.skills.panelTitle }}
-        <button v-if="isEditing" class="ef-section-add" @click="addSkill">{{ T.about.skills.add }}</button>
-      </h2>
-      <div class="ef-about-skills">
-        <div class="ef-about-skill" v-for="(s, i) in skills" :key="i">
-          <span class="ef-about-skill-name" v-if="!isEditing">{{ s.name }}</span>
-          <input v-else v-model="s.name" class="ef-about-skill-input" />
-          <div class="ef-about-skill-bar">
-            <div class="ef-about-skill-fill" :style="{ width: s.pct + '%' }"></div>
-          </div>
-          <input v-if="isEditing" v-model.number="s.pct" type="range" min="0" max="100" class="ef-about-skill-range" />
-          <span class="ef-about-skill-tools" v-if="!isEditing">{{ s.tools }}</span>
-          <input v-else v-model="s.tools" class="ef-about-skill-input ef-about-skill-input--right" />
-          <button v-if="isEditing" class="ef-item-remove" @click="removeSkill(i)">×</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 任务领域 -->
-    <div class="ef-about-section">
-      <h2 class="ef-about-section-title">
-        <span class="ef-about-section-bar"></span>
-        {{ T.about.fields.title }}
-        <button v-if="isEditing" class="ef-section-add" @click="addField">{{ T.about.fields.add }}</button>
-      </h2>
-      <div class="ef-about-fields">
-        <div class="ef-about-field" v-for="(f, i) in fields" :key="i">
-          <span class="ef-about-field-icon">{{ f.icon }}</span>
-          <div class="ef-about-field-body">
-            <template v-if="isEditing">
-              <input v-model="f.title" class="ef-about-field-input ef-about-field-input--title" />
-              <input v-model="f.desc" class="ef-about-field-input ef-about-field-input--desc" />
-            </template>
-            <template v-else>
-              <strong>{{ f.title }}</strong>
-              <p>{{ f.desc }}</p>
-            </template>
-          </div>
-          <button v-if="isEditing" class="ef-item-remove" @click="removeField(i)">×</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 立绘/图片展示区 -->
-    <div class="ef-about-section">
-      <h2 class="ef-about-section-title">
-        <span class="ef-about-section-bar"></span>
-        {{ T.about.showcase.title }}
-      </h2>
-      <div class="ef-about-showcase" v-if="showcaseImages.length">
-        <div class="ef-about-showcase-item" v-for="(img, i) in showcaseImages" :key="i">
-          <img :src="img.url" :alt="img.name" />
-          <button v-if="isEditing" class="ef-about-showcase-remove" @click="removeShowcase(i)">×</button>
-        </div>
-      </div>
-      <div class="ef-about-showcase-empty" v-if="isEditing">
-        <label class="ef-about-showcase-upload">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="18" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2"/>
-            <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.2"/>
-          </svg>
-          <span>{{ T.about.showcase.upload }}</span>
-          <input type="file" accept="image/*" multiple @change="handleShowcaseUpload" hidden />
-        </label>
-      </div>
-    </div>
-
-    <!-- 通信频道 -->
-    <div class="ef-about-section">
-      <h2 class="ef-about-section-title">
-        <span class="ef-about-section-bar"></span>
-        {{ T.about.communication.title }}
-      </h2>
-      <div class="ef-about-links">
-        <a href="https://github.com/littleclock2" target="_blank" class="ef-about-link">
-          <span class="ef-about-link-label">{{ T.about.edit.github }}</span>
-          <span class="ef-about-link-value">littleclock2</span>
-          <span class="ef-about-link-arrow">→</span>
-        </a>
-        <a href="mailto:contact@example.invalid" class="ef-about-link">
-          <span class="ef-about-link-label">{{ T.about.edit.email }}</span>
-          <span class="ef-about-link-value">contact@example.invalid</span>
-          <span class="ef-about-link-arrow">→</span>
+    <section class="ys-about-section" aria-labelledby="about-projects">
+      <header>
+        <p class="ys-eyebrow">SELECTED WORK</p>
+        <h2 id="about-projects">代表项目</h2>
+      </header>
+      <div class="ys-about-projects">
+        <a
+          v-for="project in projects"
+          :key="project.name"
+          :href="project.url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <strong>{{ project.name }}</strong>
+          <span>{{ project.description }}</span>
         </a>
       </div>
-    </div>
+    </section>
 
-    <!-- ══ 密码验证弹窗 ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div v-if="showPwdModal" class="ef-pwd-overlay" @click.self="showPwdModal = false">
-        <div class="ef-pwd-box">
-          <p class="ef-pwd-title">{{ T.about.edit.restricted }}</p>
-          <p class="ef-pwd-sub">{{ T.about.edit.pwdSubtitle }}</p>
-          <div class="ef-pwd-row">
-            <input v-model="pwdInput" type="password" class="ef-pwd-input" :placeholder="T.about.edit.pwdPlaceholder" @keyup.enter="submitPwd" />
-            <button class="ef-pwd-btn" @click="submitPwd">{{ T.about.edit.pwdEnter }}</button>
-          </div>
-          <p v-if="pwdError" class="ef-pwd-error">{{ pwdError }}</p>
-        </div>
+    <section class="ys-about-section" aria-labelledby="about-links">
+      <header>
+        <p class="ys-eyebrow">CONTACT</p>
+        <h2 id="about-links">联系</h2>
+      </header>
+      <div class="ys-contact-list">
+        <a
+          v-for="link in links"
+          :key="link.url"
+          :href="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>{{ link.label }}</span>
+          <strong>{{ link.value }}</strong>
+        </a>
       </div>
-    </Teleport>
-
-    <!-- ══ 裁剪弹窗 ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div v-if="cropVisible" class="ef-crop-overlay" @mousemove="onCropMouseMove" @mouseup="onCropMouseUp" @mouseleave="onCropMouseUp">
-        <div class="ef-crop-modal">
-          <p class="ef-crop-title">{{ T.about.edit.cropImage }}</p>
-          <div class="ef-crop-viewport">
-            <img :src="cropImgSrc" class="ef-crop-img" @load="initCropBox" />
-            <!-- 裁剪遮罩 -->
-            <div class="ef-crop-mask" :style="{
-              clipPath: `polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${cropBox.x}px ${cropBox.y}px, ${cropBox.x}px ${cropBox.y + cropBox.h}px, ${cropBox.x + cropBox.w}px ${cropBox.y + cropBox.h}px, ${cropBox.x + cropBox.w}px ${cropBox.y}px, ${cropBox.x}px ${cropBox.y}px)`
-            }"></div>
-            <!-- 裁剪框 -->
-            <div class="ef-crop-box" :style="{ left: cropBox.x + 'px', top: cropBox.y + 'px', width: cropBox.w + 'px', height: cropBox.h + 'px' }">
-              <div class="ef-crop-handle ef-crop-nw" @mousedown="onCropMouseDown($event, 'nw')"></div>
-              <div class="ef-crop-handle ef-crop-ne" @mousedown="onCropMouseDown($event, 'ne')"></div>
-              <div class="ef-crop-handle ef-crop-sw" @mousedown="onCropMouseDown($event, 'sw')"></div>
-              <div class="ef-crop-handle ef-crop-se" @mousedown="onCropMouseDown($event, 'se')"></div>
-              <div class="ef-crop-move" @mousedown="onCropMouseDown($event, 'move')"></div>
-              <!-- 十字参考线 -->
-              <div class="ef-crop-cross-h"></div>
-              <div class="ef-crop-cross-v"></div>
-            </div>
-          </div>
-          <div class="ef-crop-actions">
-            <button class="ef-crop-btn ef-crop-cancel" @click="cancelCrop">{{ T.about.edit.cancel }}</button>
-            <button class="ef-crop-btn ef-crop-confirm" @click="confirmCrop">{{ T.about.edit.confirm }}</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-
-    <!-- ══ 帮助弹窗 ═══════════════════════════════════════ -->
-    <Teleport to="body">
-      <div v-if="showHelp" class="ef-help-overlay" @click.self="showHelp = false">
-        <div class="ef-help-box">
-          <p class="ef-help-title">{{ T.about.help.title }}</p>
-          <div class="ef-help-content">
-            <div class="ef-help-step">
-              <span class="ef-help-num">01</span>
-              <div>
-                <p class="ef-help-step-title">{{ T.about.help.step1Title }}</p>
-                <p class="ef-help-step-desc">{{ T.about.help.step1Desc }}</p>
-              </div>
-            </div>
-            <div class="ef-help-step">
-              <span class="ef-help-num">02</span>
-              <div>
-                <p class="ef-help-step-title">{{ T.about.help.step2Title }}</p>
-                <p class="ef-help-step-desc">{{ T.about.help.step2Desc }}</p>
-              </div>
-            </div>
-            <div class="ef-help-step">
-              <span class="ef-help-num">03</span>
-              <div>
-                <p class="ef-help-step-title">{{ T.about.help.step3Title }}</p>
-                <p class="ef-help-step-desc">{{ T.about.help.step3Desc }}</p>
-              </div>
-            </div>
-            <div class="ef-help-step">
-              <span class="ef-help-num">04</span>
-              <div>
-                <p class="ef-help-step-title">{{ T.about.help.step4Title }}</p>
-                <p class="ef-help-step-desc">{{ T.about.help.step4Desc }}</p>
-              </div>
-            </div>
-            <div class="ef-help-step">
-              <span class="ef-help-num">05</span>
-              <div>
-                <p class="ef-help-step-title">{{ T.about.help.step5Title }}</p>
-                <p class="ef-help-step-desc">{{ T.about.help.step5Desc }}</p>
-              </div>
-            </div>
-          </div>
-          <button class="ef-help-close" @click="showHelp = false">{{ T.about.help.close }}</button>
-        </div>
-      </div>
-    </Teleport>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.ef-about { max-width: 800px; }
-
-/* ══ 工具栏 ════════════════════════════════════════════ */
-.ef-about-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 20px;
+.ys-about {
+  display: grid;
+  gap: 3.5rem;
+  width: 100%;
 }
-.ef-about-edit-btn {
-  font-family: 'Inter', sans-serif;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 3px;
-  padding: 8px 20px;
+
+.ys-about-intro,
+.ys-about-section {
+  min-width: 0;
+}
+
+.ys-about-intro {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 2.75rem);
+  align-items: start;
+  padding: 1.5rem 0 2.25rem;
+  border-bottom: 1px solid var(--ys-border);
+}
+
+.ys-about-avatar {
+  display: grid;
+  gap: 0.55rem;
+  color: var(--ys-muted);
+  font-family: var(--ys-font-mono);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+}
+
+.ys-about-avatar img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--ys-border);
+  background: var(--ys-surface);
+  filter: saturate(0.82) contrast(1.04);
+  transition: border-color 160ms ease, filter 160ms ease;
+}
+
+.ys-about-avatar:hover {
+  color: var(--ys-signal);
+}
+
+.ys-about-avatar:hover img,
+.ys-about-avatar:focus-visible img {
+  border-color: var(--ys-signal);
+  filter: saturate(1) contrast(1.04);
+}
+
+.ys-about-avatar:focus-visible {
+  outline: 2px solid var(--ys-signal);
+  outline-offset: 4px;
+}
+
+.ys-about-avatar:active {
+  color: var(--ys-text);
+}
+
+.ys-about-intro-copy {
+  min-width: 0;
+}
+
+.ys-about-intro h2 {
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  border: 0;
+  color: var(--ys-text);
+  font-family: var(--ys-font-mono);
+  font-size: clamp(2rem, 8vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.ys-about-intro h2::before,
+.ys-about-intro h2::after {
+  display: none;
+}
+
+.ys-about-role {
+  margin: 0;
+  color: var(--ys-signal);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.ys-about-summary {
+  max-width: 42rem;
+  margin: 1.5rem 0 0;
+  color: var(--ys-muted);
+  line-height: 1.9;
+}
+
+.ys-about-intro blockquote {
+  margin: 1.5rem 0 0;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid var(--ys-signal);
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #777;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: var(--ys-text);
 }
-.ef-about-edit-btn:hover { border-color: var(--ef-yellow); color: var(--ef-yellow); }
-.ef-about-edit-btn--active { background: var(--ef-yellow); color: #0a0a0a; border-color: var(--ef-yellow); }
 
-/* ══ Hero区 ════════════════════════════════════════════ */
-.ef-about-hero {
-  display: flex;
-  align-items: center;
-  gap: 40px;
-  margin-bottom: 48px;
-  padding-bottom: 40px;
-  border-bottom: 1px solid #1e1e1e;
+.ys-about-section > header {
+  margin-bottom: 1.25rem;
 }
-.ef-about-avatar-wrap { position: relative; flex-shrink: 0; }
-.ef-about-avatar-border {
-  width: 120px; height: 120px;
-  border: 2px solid var(--ef-yellow);
-  display: flex; align-items: center; justify-content: center;
-  background: #111; position: relative; overflow: visible;
-}
-.ef-about-avatar { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.ef-about-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.ef-about-avatar--empty { flex-direction: column; color: #333; }
-.ef-about-avatar-upload {
-  font-size: 8px; letter-spacing: 2px; color: #555;
-  cursor: pointer; margin-top: 6px; transition: color 0.2s;
-}
-.ef-about-avatar-upload:hover { color: var(--ef-yellow); }
-.ef-about-avatar-replace {
-  position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
-  font-size: 8px; letter-spacing: 2px; color: #555; cursor: pointer;
-  white-space: nowrap; transition: color 0.2s;
-}
-.ef-about-avatar-replace:hover { color: var(--ef-yellow); }
 
-/* 四角装饰 */
-.ef-about-corner { position: absolute; width: 10px; height: 10px; }
-.ef-about-corner::before, .ef-about-corner::after { content: ''; position: absolute; background: var(--ef-yellow); }
-.ef-about-corner::before { width: 1px; height: 100%; }
-.ef-about-corner::after { width: 100%; height: 1px; }
-.ef-about-corner--tl { top: -6px; left: -6px; }
-.ef-about-corner--tl::before { top: 0; left: 0; }
-.ef-about-corner--tl::after { top: 0; left: 0; }
-.ef-about-corner--tr { top: -6px; right: -6px; }
-.ef-about-corner--tr::before { top: 0; right: 0; }
-.ef-about-corner--tr::after { top: 0; right: 0; }
-.ef-about-corner--bl { bottom: -6px; left: -6px; }
-.ef-about-corner--bl::before { bottom: 0; left: 0; }
-.ef-about-corner--bl::after { bottom: 0; left: 0; }
-.ef-about-corner--br { bottom: -6px; right: -6px; }
-.ef-about-corner--br::before { bottom: 0; right: 0; }
-.ef-about-corner--br::after { bottom: 0; right: 0; }
+.ys-about-section h2 {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 0;
+  color: var(--ys-text);
+  font-family: var(--ys-font-mono);
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
 
-.ef-about-code-name { font-family: 'Share Tech Mono', monospace; font-size: 10px; letter-spacing: 4px; color: #555; margin: 0 0 4px; }
-.ef-about-name { font-family: 'Inter', sans-serif; font-weight: 900; font-size: 36px; letter-spacing: 4px; color: #fff; margin: 0 0 8px; text-transform: uppercase; }
-.ef-about-role { font-size: 14px; color: #777; margin: 0 0 16px; letter-spacing: 1px; }
-.ef-about-divider { width: 40px; height: 2px; background: var(--ef-yellow); margin-bottom: 16px; }
-.ef-about-quote { font-size: 13px; color: #555; font-style: italic; margin: 0; }
+.ys-about-section h2::after {
+  display: none;
+}
 
-/* ══ 内联编辑输入框 ════════════════════════════════════════ */
-.ef-inline-input {
-  background: transparent; border: 1px solid #2a2a2a; color: inherit;
-  font: inherit; width: 100%; padding: 2px 4px; outline: none;
-  transition: border-color 0.2s;
+.ys-skill-list {
+  margin: 0;
+  border-top: 1px solid var(--ys-border);
 }
-.ef-inline-input:focus { border-color: var(--ef-yellow); }
-.ef-inline-input--name { font-size: 36px; font-weight: 900; letter-spacing: 4px; }
-.ef-inline-input--role { font-size: 14px; letter-spacing: 1px; }
-.ef-inline-input--quote { font-size: 13px; font-style: italic; }
 
-/* ══ Section ════════════════════════════════════════════ */
-.ef-about-section { margin-bottom: 40px; }
-.ef-about-section-title {
-  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px;
-  letter-spacing: 3px; color: #888; text-transform: uppercase;
-  display: flex; align-items: center; gap: 10px;
-  margin: 0 0 20px; padding-bottom: 12px; border-bottom: 1px solid #1e1e1e;
+.ys-skill-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.6fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--ys-border);
 }
-.ef-about-section-bar { width: 3px; height: 14px; background: var(--ef-yellow); flex-shrink: 0; }
-.ef-section-add {
-  margin-left: auto; font-size: 10px; letter-spacing: 1px;
-  background: transparent; border: 1px solid #2a2a2a; color: #666;
-  padding: 3px 10px; cursor: pointer; transition: all 0.2s;
-}
-.ef-section-add:hover { border-color: var(--ef-yellow); color: var(--ef-yellow); }
-.ef-item-remove {
-  background: transparent; border: none; color: #555; font-size: 16px;
-  cursor: pointer; padding: 0 4px; transition: color 0.2s; flex-shrink: 0;
-}
-.ef-item-remove:hover { color: #ff4060; }
 
-/* ══ 技能条 ════════════════════════════════════════════ */
-.ef-about-skills { display: flex; flex-direction: column; gap: 14px; }
-.ef-about-skill { display: flex; align-items: center; gap: 12px; }
-.ef-about-skill-name { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: #999; letter-spacing: 1px; min-width: 80px; }
-.ef-about-skill-bar { flex: 1; height: 4px; background: #1a1a1a; position: relative; }
-.ef-about-skill-fill { height: 100%; background: var(--ef-yellow); transition: width 0.3s ease; }
-.ef-about-skill-tools { font-size: 13px; color: #777; min-width: 140px; text-align: right; }
-.ef-about-skill-input {
-  background: transparent; border: 1px solid #2a2a2a; color: #ccc;
-  font-family: 'Share Tech Mono', monospace; font-size: 11px;
-  padding: 2px 6px; outline: none; min-width: 0;
+.ys-skill-row dt {
+  color: var(--ys-text);
+  font-weight: 600;
 }
-.ef-about-skill-input:focus { border-color: var(--ef-yellow); }
-.ef-about-skill-input--right { text-align: right; }
-.ef-about-skill-range { width: 60px; accent-color: var(--ef-yellow); }
 
-/* ══ 任务领域 ════════════════════════════════════════════ */
-.ef-about-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.ef-about-field { display: flex; gap: 10px; padding: 14px; background: #111; border: 1px solid #1e1e1e; }
-.ef-about-field-icon { color: var(--ef-yellow); font-size: 12px; margin-top: 2px; }
-.ef-about-field-body { flex: 1; }
-.ef-about-field strong { display: block; font-size: 13px; color: #ddd; margin-bottom: 4px; font-weight: 700; }
-.ef-about-field p { font-size: 12px; color: #666; margin: 0; }
-.ef-about-field-input {
-  width: 100%; background: transparent; border: 1px solid #2a2a2a;
-  color: #ccc; font: inherit; padding: 2px 4px; outline: none; margin-bottom: 4px;
+.ys-skill-row dd {
+  margin: 0;
+  color: var(--ys-muted);
 }
-.ef-about-field-input:focus { border-color: var(--ef-yellow); }
-.ef-about-field-input--title { font-size: 13px; font-weight: 700; }
-.ef-about-field-input--desc { font-size: 12px; color: #888; }
 
-/* ══ 立绘展示 ════════════════════════════════════════════ */
-.ef-about-showcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 12px; }
-.ef-about-showcase-item { position: relative; border: 1px solid #1e1e1e; background: #111; aspect-ratio: 3/4; overflow: hidden; }
-.ef-about-showcase-item img { width: 100%; height: 100%; object-fit: cover; }
-.ef-about-showcase-remove {
-  position: absolute; top: 6px; right: 6px; width: 20px; height: 20px;
-  background: rgba(0,0,0,0.7); border: 1px solid #333; color: #999;
-  font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
+.ys-focus-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--ys-border);
+  border-left: 1px solid var(--ys-border);
 }
-.ef-about-showcase-remove:hover { border-color: #ff4060; color: #ff4060; }
-.ef-about-showcase-empty { border: 2px dashed #1e1e1e; padding: 32px; text-align: center; }
-.ef-about-showcase-upload {
-  display: inline-flex; flex-direction: column; align-items: center; gap: 8px;
-  color: #444; cursor: pointer; transition: color 0.2s; font-size: 12px; letter-spacing: 1px;
-}
-.ef-about-showcase-upload:hover { color: var(--ef-yellow); }
 
-/* ══ 通信频道 ════════════════════════════════════════════ */
-.ef-about-links { display: flex; flex-direction: column; gap: 2px; }
-.ef-about-link { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #111; border: 1px solid #1e1e1e; text-decoration: none; transition: all 0.2s; }
-.ef-about-link:hover { border-color: #2a2a2a; background: #161616; }
-.ef-about-link-label { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 3px; color: #555; width: 80px; flex-shrink: 0; }
-.ef-about-link-value { font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #999; flex: 1; }
-.ef-about-link-arrow { color: #333; transition: color 0.2s, transform 0.2s; }
-.ef-about-link:hover .ef-about-link-arrow { color: var(--ef-yellow); transform: translateX(4px); }
+.ys-focus-grid article {
+  min-width: 0;
+  padding: 1.25rem;
+  border-right: 1px solid var(--ys-border);
+  border-bottom: 1px solid var(--ys-border);
+  background: var(--ys-surface);
+}
 
-/* ══ 密码弹窗 ════════════════════════════════════════════ */
-.ef-pwd-overlay {
-  position: fixed; inset: 0; z-index: 9998;
-  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+.ys-focus-grid h3 {
+  margin: 0 0 0.5rem;
+  color: var(--ys-text);
+  font-size: 0.95rem;
 }
-.ef-pwd-box {
-  text-align: center; padding: 32px; background: #111; border: 1px solid #2a2a2a;
-}
-.ef-pwd-title { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 4px; color: #ccc; margin: 0 0 6px; }
-.ef-pwd-sub { font-size: 12px; color: #666; margin: 0 0 20px; }
-.ef-pwd-row { display: flex; gap: 0; }
-.ef-pwd-input {
-  background: #0c0c0c; border: 1px solid #2a2a2a; color: #ddd;
-  padding: 10px 14px; font-family: 'Share Tech Mono', monospace; font-size: 13px;
-  outline: none; width: 180px;
-}
-.ef-pwd-input:focus { border-color: var(--ef-yellow); }
-.ef-pwd-btn {
-  background: var(--ef-yellow); color: #0a0a0a; border: none;
-  padding: 10px 18px; font-family: 'Inter', sans-serif; font-weight: 700;
-  font-size: 11px; letter-spacing: 2px; cursor: pointer;
-}
-.ef-pwd-btn:hover { background: #ffe800; }
-.ef-pwd-error { color: #ff4060; font-family: 'Share Tech Mono', monospace; font-size: 11px; letter-spacing: 2px; margin-top: 12px; }
-.ef-about-edit-btn--lock { margin-right: 8px; }
-.ef-about-edit-btn--export { margin-right: 8px; border-color: rgba(0,255,162,0.3); color: rgba(0,255,162,0.7); }
-.ef-about-edit-btn--export:hover { border-color: #00ffa2; color: #00ffa2; }
-.ef-about-edit-btn--help { margin-right: auto; border-color: rgba(0,255,162,0.3); color: #00ffa2; }
-.ef-about-edit-btn--help:hover { border-color: #00ffa2; color: #00ffa2; background: rgba(0,255,162,0.06); }
 
-/* ══ 帮助弹窗 ════════════════════════════════════════════ */
-.ef-help-overlay {
-  position: fixed; inset: 0; z-index: 9998;
-  background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center;
+.ys-focus-grid p {
+  margin: 0;
+  color: var(--ys-muted);
+  font-size: 0.85rem;
 }
-.ef-help-box {
-  background: #161616; border: 1px solid #333; padding: 32px; max-width: 420px; width: 90vw;
-}
-.ef-help-title {
-  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 12px;
-  letter-spacing: 4px; color: var(--ef-yellow); margin: 0 0 24px;
-}
-.ef-help-content { display: flex; flex-direction: column; gap: 16px; }
-.ef-help-step { display: flex; gap: 14px; align-items: flex-start; }
-.ef-help-num {
-  font-family: 'Inter', sans-serif; font-weight: 900; font-size: 18px;
-  color: rgba(255,241,0,0.35); min-width: 30px; line-height: 1;
-}
-.ef-help-step-title {
-  font-family: 'Source Sans 3', sans-serif; font-size: 13px; font-weight: 700;
-  color: #e0e0e0; margin: 0 0 2px;
-}
-.ef-help-step-desc {
-  font-size: 12px; color: #999; margin: 0; line-height: 1.5;
-}
-.ef-help-close {
-  margin-top: 24px; width: 100%; padding: 10px;
-  background: rgba(255,241,0,0.06); border: 1px solid rgba(255,241,0,0.2); color: var(--ef-yellow);
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px;
-  letter-spacing: 3px; cursor: pointer; transition: all 0.2s;
-}
-.ef-help-close:hover { background: rgba(255,241,0,0.12); border-color: var(--ef-yellow); }
 
-/* ══ 裁剪弹窗 ════════════════════════════════════════════ */
-.ef-crop-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
-  cursor: crosshair;
+.ys-about-projects,
+.ys-contact-list {
+  border-top: 1px solid var(--ys-border);
 }
-.ef-crop-modal { background: #111; border: 1px solid #2a2a2a; padding: 20px; max-width: 600px; width: 90vw; }
-.ef-crop-title { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 3px; color: #888; margin: 0 0 12px; }
-.ef-crop-viewport { position: relative; overflow: hidden; background: #0a0a0a; line-height: 0; }
-.ef-crop-img { max-width: 100%; max-height: 50vh; display: block; user-select: none; pointer-events: none; }
-.ef-crop-mask { position: absolute; inset: 0; background: rgba(0,0,0,0.6); pointer-events: none; }
-.ef-crop-box {
-  position: absolute; border: 2px solid var(--ef-yellow); cursor: move;
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
-}
-.ef-crop-move { position: absolute; inset: 0; cursor: move; }
-.ef-crop-handle {
-  position: absolute; width: 12px; height: 12px; background: var(--ef-yellow);
-  border: 1px solid #0a0a0a; z-index: 1;
-}
-.ef-crop-nw { top: -6px; left: -6px; cursor: nw-resize; }
-.ef-crop-ne { top: -6px; right: -6px; cursor: ne-resize; }
-.ef-crop-sw { bottom: -6px; left: -6px; cursor: sw-resize; }
-.ef-crop-se { bottom: -6px; right: -6px; cursor: se-resize; }
-.ef-crop-cross-h { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,241,0,0.2); pointer-events: none; }
-.ef-crop-cross-v { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(255,241,0,0.2); pointer-events: none; }
-.ef-crop-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-.ef-crop-btn {
-  font-family: 'Inter', sans-serif; font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; padding: 8px 20px; cursor: pointer; border: none; transition: all 0.2s;
-}
-.ef-crop-cancel { background: #2a2a2a; color: #999; }
-.ef-crop-cancel:hover { background: #333; }
-.ef-crop-confirm { background: var(--ef-yellow); color: #0a0a0a; }
-.ef-crop-confirm:hover { background: #ffe800; }
 
-/* ══ 响应式 ════════════════════════════════════════════ */
-@media (max-width: 768px) {
-  .ef-about-hero { flex-direction: column; text-align: center; gap: 24px; }
-  .ef-about-avatar-border { width: 100px; height: 100px; }
-  .ef-about-name, .ef-inline-input--name { font-size: 28px !important; }
-  .ef-about-skill { flex-wrap: wrap; }
-  .ef-about-fields { grid-template-columns: 1fr; }
+.ys-about-projects a,
+.ys-contact-list a {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.75fr) minmax(0, 1.25fr);
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--ys-border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.ys-about-projects a:hover,
+.ys-contact-list a:hover {
+  color: var(--ys-signal);
+}
+
+.ys-about-projects strong,
+.ys-contact-list span {
+  color: var(--ys-text);
+  overflow-wrap: anywhere;
+}
+
+.ys-about-projects span,
+.ys-contact-list strong {
+  color: var(--ys-muted);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .ys-about {
+    gap: 2.75rem;
+  }
+
+  .ys-about-intro {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .ys-about-intro h2 {
+    font-size: clamp(1.8rem, 10vw, 2.8rem);
+  }
+
+  .ys-skill-row,
+  .ys-about-projects a,
+  .ys-contact-list a {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .ys-focus-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .ys-about-intro {
+    grid-template-columns: 1fr;
+  }
+
+  .ys-about-avatar {
+    width: 10rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ys-about-avatar img {
+    transition: none;
+  }
 }
 </style>

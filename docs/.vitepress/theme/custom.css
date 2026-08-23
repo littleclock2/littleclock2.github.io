@@ -536,6 +536,11 @@ div[class*='language-'] span.line { color: #e8e8e8; }
    滚动条 / 动画 / TOC
    ═══════════════════════════════════════════════════════════ */
 
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #2a2a2a #0a0a0a;
+}
+
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: #0a0a0a; }
 ::-webkit-scrollbar-thumb { background: #2a2a2a; }

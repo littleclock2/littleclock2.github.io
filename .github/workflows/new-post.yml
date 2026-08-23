@@ -1,0 +1,81 @@
+name: New blog post
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 文章标题
+        required: true
+        type: string
+      slug:
+        description: 英文短链接，例如 stm32-uart-dma
+        required: true
+        type: string
+      description:
+        description: 一句话摘要
+        required: true
+        type: string
+      tags:
+        description: 逗号分隔标签
+        required: false
+        default: 嵌入式
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate article
+        env:
+          POST_TITLE: ${{ inputs.title }}
+          POST_SLUG: ${{ inputs.slug }}
+          POST_DESCRIPTION: ${{ inputs.description }}
+          POST_TAGS: ${{ inputs.tags }}
+        run: >-
+          node scripts/new-post.mjs
+          --title "$POST_TITLE"
+          --slug "$POST_SLUG"
+          --description "$POST_DESCRIPTION"
+          --tags "$POST_TAGS"
+
+      - name: Verify site build
+        run: npm run build
+
+      - name: Open draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POST_TITLE: ${{ inputs.title }}
+          POST_SLUG: ${{ inputs.slug }}
+        run: |
+          branch="post/${POST_SLUG}-${GITHUB_RUN_ID}"
+          compare_url="https://github.com/${GITHUB_REPOSITORY}/compare/main...${branch}?expand=1"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add "docs/blog/${POST_SLUG}.md"
+          git commit -m "docs: add ${POST_TITLE}"
+          git push --set-upstream origin "$branch"
+          if pr_url=$(gh pr create --draft --base main --head "$branch" --title "docs: ${POST_TITLE}" --body "自动生成的文章草稿。请补充正文并检查构建结果后再合并。"); then
+            echo "Draft pull request: ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "The branch was created, but repository settings blocked automatic pull-request creation." >> "$GITHUB_STEP_SUMMARY"
+            echo "Create it here: ${compare_url}" >> "$GITHUB_STEP_SUMMARY"
+          fi

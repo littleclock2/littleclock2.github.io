@@ -2,21 +2,46 @@
   "profile": {
     "name": "YUNSWORD",
     "role": "嵌入式开发工程师 · MCU · 硬件设计",
-    "quote": "「在比特与电子之间，寻找无限可能。」"
+    "avatarUrl": "https://github.com/littleclock2.png?size=320",
+    "avatarProfileUrl": "https://github.com/littleclock2",
+    "quote": "「在比特与电子之间，寻找无限可能。」",
+    "summary": "持续记录 MCU、嵌入式系统、信号处理与硬件设计中的实践。这里收录可以复现的项目过程、关键取舍和调试经验。"
   },
   "skills": [
-    { "name": "MCU 开发", "pct": 95, "tools": "STM32 · TI MSPM0" },
-    { "name": "开发环境", "pct": 88, "tools": "Keil · IAR · CCS" },
-    { "name": "编程语言", "pct": 88, "tools": "C · C++ · Python" },
-    { "name": "PCB 设计", "pct": 78, "tools": "Altium Designer · KiCad" },
-    { "name": "Android", "pct": 68, "tools": "Kotlin · Java" }
+    { "name": "MCU 开发", "tools": "STM32 · TI MSPM0" },
+    { "name": "开发环境", "tools": "Keil · IAR · CCS" },
+    { "name": "编程语言", "tools": "C · C++ · Python" },
+    { "name": "PCB 设计", "tools": "Altium Designer · KiCad" },
+    { "name": "Android", "tools": "Kotlin · Java" }
   ],
   "fields": [
-    { "icon": "▸", "title": "嵌入式系统设计", "desc": "从需求分析到固件实现" },
-    { "icon": "▸", "title": "模拟电路设计", "desc": "信号链、电源管理、传感器接口" },
-    { "icon": "▸", "title": "信号处理", "desc": "数字滤波、FFT、调制解调" },
-    { "icon": "▸", "title": "仪器仪表开发", "desc": "LC 表、万用表、信号发生器" }
+    { "title": "嵌入式系统设计", "desc": "从需求分析到固件实现" },
+    { "title": "模拟电路设计", "desc": "信号链、电源管理、传感器接口" },
+    { "title": "信号处理", "desc": "数字滤波、FFT、调制解调" },
+    { "title": "仪器仪表开发", "desc": "LC 表、万用表、信号发生器" }
   ],
-  "avatarUrl": "",
-  "showcaseImages": []
+  "projects": [
+    {
+      "name": "STM32-Projects",
+      "description": "ADC 采集、信号分离处理、运放测量与调制识别。",
+      "url": "https://github.com/littleclock2/STM32-Projects"
+    },
+    {
+      "name": "MSPM0-Projects",
+      "description": "LC 表、功率分析仪、Class-D 功放与 DDS 信号发生器。",
+      "url": "https://github.com/littleclock2/MSPM0-Projects"
+    },
+    {
+      "name": "Android-Apps",
+      "description": "服务于 MCU 开发的蓝牙通信与信号仿真应用。",
+      "url": "https://github.com/littleclock2/Android-Apps"
+    }
+  ],
+  "links": [
+    {
+      "label": "GitHub",
+      "value": "github.com/littleclock2",
+      "url": "https://github.com/littleclock2"
+    }
+  ]
 }

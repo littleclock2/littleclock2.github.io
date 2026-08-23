@@ -13,20 +13,40 @@ function switchLocale(loc) {
 }
 
 function onDocClick() { open.value = false }
-onMounted(() => document.addEventListener('click', onDocClick))
-onUnmounted(() => document.removeEventListener('click', onDocClick))
+function onKeydown(event) {
+  if (event.key === 'Escape') open.value = false
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onKeydown)
+})
+onUnmounted(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onKeydown)
+})
 </script>
 
 <template>
   <div class="t-lang-switch" @click.stop>
-    <button class="t-lang-btn" @click="open = !open">
+    <button
+      class="t-lang-btn"
+      type="button"
+      aria-label="切换界面语言"
+      aria-haspopup="menu"
+      :aria-expanded="open"
+      @click="open = !open"
+    >
       {{ localeLabels[locale] }}
     </button>
-    <div v-if="open" class="t-lang-dropdown">
+    <div v-if="open" class="t-lang-dropdown" role="menu" aria-label="界面语言">
       <button
         v-for="(label, code) in localeLabels"
         :key="code"
         :class="['t-lang-option', { 't-lang-option--active': locale === code }]"
+        type="button"
+        role="menuitemradio"
+        :aria-checked="locale === code"
         @click="switchLocale(code)"
       >
         {{ label }}
@@ -39,21 +59,21 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 .t-lang-switch { position: relative; margin-left: 12px; }
 
 .t-lang-btn {
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: var(--ys-font-mono);
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: #999;
+  color: var(--ys-muted);
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--ys-border);
   padding: 4px 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 .t-lang-btn:hover {
-  border-color: var(--ef-yellow);
-  color: var(--ef-yellow);
+  border-color: var(--ys-signal);
+  color: var(--ys-signal);
 }
 
 .t-lang-dropdown {
@@ -61,8 +81,8 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: #111;
-  border: 1px solid #2a2a2a;
+  background: var(--ys-surface);
+  border: 1px solid var(--ys-border);
   z-index: 100;
   min-width: 60px;
 }
@@ -70,12 +90,12 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 .t-lang-option {
   display: block;
   width: 100%;
-  font-family: 'Source Sans 3', sans-serif;
+  font-family: var(--ys-font-mono);
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: #777;
+  color: var(--ys-muted);
   background: transparent;
   border: none;
   padding: 8px 14px;
@@ -84,10 +104,10 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   transition: all 0.2s;
 }
 .t-lang-option:hover {
-  background: rgba(255,241,0,0.06);
-  color: var(--ef-yellow);
+  background: var(--ys-surface-raised);
+  color: var(--ys-signal);
 }
 .t-lang-option--active {
-  color: var(--ef-yellow);
+  color: var(--ys-signal);
 }
 </style>

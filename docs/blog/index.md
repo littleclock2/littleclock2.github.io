@@ -1,20 +1,25 @@
-# BLOG
-
-记录学习与实践中的思考和发现。
-
+---
+title: 文章
+description: YunSword 的嵌入式开发、MCU 与硬件设计实践记录。
 ---
 
-## 最新文章
+<script setup>
+import { data as posts } from '../.vitepress/data/blog.data.mjs'
+</script>
 
-<div style="display:flex;flex-direction:column;gap:16px;margin-top:24px;">
+# 文章
 
-[STM32 频率测量实践](/blog/stm32-frequency-measurement)
-: 2026-05-26 · 使用 STM32 定时器输入捕获实现高精度频率测量
+记录嵌入式开发、MCU、信号处理与硬件设计中的实践和判断。
 
-[MSPM0 LC 表设计](/blog/mspm0-lc-meter)
-: 2026-05-26 · 基于 TI MSPM0 的谐振频率法 LC 表
-
-[AD9833 DDS 信号发生器](/blog/ad9833-dds-signal-generator)
-: 2026-05-26 · AD9833 DDS 芯片正弦波/方波/三角波输出
-
+<div class="ys-post-index">
+  <article v-for="post in posts" :key="post.url" class="ys-post-row">
+    <a :href="post.url" class="ys-post-row-link">
+      <div class="ys-post-meta">
+        <time :datetime="post.date">{{ post.date }}</time>
+        <span v-for="tag in post.tags" :key="tag">{{ tag }}</span>
+      </div>
+      <h2>{{ post.title }}</h2>
+      <p>{{ post.description }}</p>
+    </a>
+  </article>
 </div>

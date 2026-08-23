@@ -1,0 +1,24 @@
+{
+  "music": {
+    "enabled": true,
+    "defaultVolume": 0.3,
+    "tracks": [
+      {
+        "title": "站点 BGM",
+        "src": "/bgm.mp3"
+      },
+      {
+        "title": "明天的云",
+        "src": "/music/tomorrows-cloud.mp3"
+      },
+      {
+        "title": "拾忆",
+        "src": "/music/memory-re0811.mp3"
+      },
+      {
+        "title": "宇宙的不可思议",
+        "src": "/music/cosmic-mystery.mp3"
+      }
+    ]
+  }
+}
